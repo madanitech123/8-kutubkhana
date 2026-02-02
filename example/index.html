@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-translate="app.title">Library Management System</title>
+    <!-- Color Theme System - Load FIRST so variables are available -->
+    <link rel="stylesheet" href="css/color-themes.css">
+    <!-- Main Stylesheets -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/enhanced-styles.css">
+    <link rel="stylesheet" href="css/icon-enhancements.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/mobile-enhancements.css">
+    <link rel="stylesheet" href="css/book-name-highlighting.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Arabic Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="login" class="page active">
+        <div>
+            <h1 data-translate="login.title">Login</h1>
+            <div class="form-container">
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username" data-translate="login.username">Username</label>
+                    <input type="text" id="username" name="username" data-translate-placeholder="login.usernamePlaceholder" required>
+                </div>
+                <div class="form-group">
+                    <label for="password" data-translate="login.password">Password</label>
+                    <input type="password" id="password" name="password" data-translate-placeholder="login.passwordPlaceholder" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" data-translate="login.loginButton">Login</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+    <div class="app-container" style="display: none;">
+        <!-- Top Navigation Bar -->
+        <header class="top-navbar">
+            <!-- Row 1: App Name Only (Centered) -->
+            <div class="navbar-title">
+                <i class="fas fa-book-open"></i>
+                <h1 data-translate="app.fullName">Library Management System</h1>
+            </div>
+
+            <!-- Row 2: Description (Centered) -->
+            <div class="navbar-description">
+                <p data-translate="app.description">Manage your library resources efficiently and effectively</p>
+            </div>
+
+            <!-- Row 3: Navigation & Controls -->
+            <div class="navbar-controls">
+                <!-- Mobile Control Icons (centered) -->
+                <div class="mobile-control-icons">
+                    <button id="mobile-menu-toggle" class="control-icon">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="language-dropdown-container">
+                        <button id="language-toggle" class="control-icon" title="Change Language">
+                            <i class="fas fa-language"></i>
+                        </button>
+                        <div id="language-dropdown" class="language-dropdown">
+                            <div class="language-option" data-lang="ar">العربية</div>
+                            <div class="language-option" data-lang="en">English</div>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="control-icon" data-translate-title="common.logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+
+                <!-- Desktop Navigation with Icons at End -->
+                <nav class="navbar-menu">
+                    <ul class="nav-menu">
+                        <li class="nav-item active" data-page="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span data-translate="navigation.dashboard">Dashboard</span>
+                        </li>
+                        <li class="nav-item" data-page="books">
+                            <i class="fas fa-list"></i>
+                            <span data-translate="navigation.books">Book List</span>
+                        </li>
+                        <li class="nav-item" data-page="add-book">
+                            <i class="fas fa-plus-circle"></i>
+                            <span data-translate="navigation.addBook">Add Book</span>
+                        </li>
+                        <li class="nav-item" data-page="issue-history">
+                            <i class="fas fa-history"></i>
+                            <span data-translate="navigation.issueHistory">Issue History</span>
+                        </li>
+                        <li class="nav-item" data-page="library-log">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span data-translate="navigation.libraryLog">Library Log</span>
+                        </li>
+                        <li class="nav-item" data-page="members">
+                            <i class="fas fa-users"></i>
+                            <span data-translate="navigation.members">Manage Members</span>
+                        </li>
+                        <li class="nav-item" data-page="categories">
+                            <i class="fas fa-tags"></i>
+                            <span data-translate="navigation.categories">Manage Categories</span>
+                        </li>
+                        <li class="nav-item" data-page="publishers">
+                            <i class="fas fa-building"></i>
+                            <span data-translate="navigation.publishers">Manage Publishers</span>
+                        </li>
+                        <!-- Desktop Control Icons at End -->
+                        <li class="desktop-control-icons">
+                            <div class="language-dropdown-container">
+                                <button id="language-toggle-desktop" class="control-icon" title="Change Language">
+                                    <i class="fas fa-language"></i>
+                                </button>
+                                <div id="language-dropdown-desktop" class="language-dropdown">
+                                    <div class="language-option" data-lang="ar">العربية</div>
+                                    <div class="language-option" data-lang="en">English</div>
+                                </div>
+                            </div>
+                            <button id="logout-btn-desktop" class="control-icon" data-translate-title="common.logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Mobile Menu Dropdown -->
+            <nav class="mobile-nav-menu">
+                <ul class="mobile-nav-list">
+                    <li class="nav-item active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span data-translate="navigation.dashboard">Dashboard</span>
+                    </li>
+                    <li class="nav-item" data-page="books">
+                        <i class="fas fa-list"></i>
+                        <span data-translate="navigation.books">Book List</span>
+                    </li>
+                    <li class="nav-item" data-page="add-book">
+                        <i class="fas fa-plus-circle"></i>
+                        <span data-translate="navigation.addBook">Add Book</span>
+                    </li>
+                    <li class="nav-item" data-page="issue-history">
+                        <i class="fas fa-history"></i>
+                        <span data-translate="navigation.issueHistory">Issue History</span>
+                    </li>
+                    <li class="nav-item" data-page="library-log">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span data-translate="navigation.libraryLog">Library Log</span>
+                    </li>
+                    <li class="nav-item" data-page="members">
+                        <i class="fas fa-users"></i>
+                        <span data-translate="navigation.members">Manage Members</span>
+                    </li>
+                    <li class="nav-item" data-page="categories">
+                        <i class="fas fa-tags"></i>
+                        <span data-translate="navigation.categories">Manage Categories</span>
+                    </li>
+                    <li class="nav-item" data-page="publishers">
+                        <i class="fas fa-building"></i>
+                        <span data-translate="navigation.publishers">Manage Publishers</span>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Mobile Overlay -->
+        <div id="mobile-overlay" class="mobile-overlay"></div>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active fade-in-up">
+                <h1 data-translate="dashboard.title">Dashboard</h1>
+                <div class="stats-grid synchronized">
+                    <div class="stat-card">
+                        <div class="stat-icon books">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 data-translate="dashboard.totalBooks">Total Books</h3>
+                            <p class="stat-number" id="total-books">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon authors">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 data-translate="dashboard.totalAuthors">Total Authors</h3>
+                            <p class="stat-number" id="total-authors">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon categories">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 data-translate="dashboard.totalCategories">Total Categories</h3>
+                            <p class="stat-number" id="total-categories">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon available">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 data-translate="dashboard.booksAvailable">Books Available</h3>
+                            <p class="stat-number" id="books-available">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card clickable" id="books-issued-card">
+                        <div class="stat-icon issued">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 data-translate="dashboard.booksIssued">Books Issued</h3>
+                            <p class="stat-number" id="books-issued">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Book List Page -->
+            <div id="books" class="page fade-in-up">
+                <div class="page-header">
+                    <h1 data-translate="books.title">Book List</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="export-excel">
+                            <i class="fas fa-download"></i> <span>Export to CSV</span>
+                        </button>
+                        <button class="btn btn-danger" id="bulk-delete-btn" style="display: none;">
+                            <i class="fas fa-trash"></i> Delete Selected (<span id="selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" dir="rtl">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <span>Select</span>
+                                    <input type="checkbox" id="select-all-books">
+                                </th>
+                                <th>
+                                    <span>Library ID</span>
+                                    <input type="text" class="filter-input" data-column="libraryId" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Book Name</span>
+                                    <input type="text" class="filter-input" data-column="bookName" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Author</span>
+                                    <input type="text" class="filter-input" data-column="author" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Category</span>
+                                    <input type="text" class="filter-input" data-column="category" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Editor</span>
+                                    <input type="text" class="filter-input" data-column="editor" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Volumes</span>
+                                    <input type="text" class="filter-input" data-column="volumes" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Publisher</span>
+                                    <input type="text" class="filter-input" data-column="publisher" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Year</span>
+                                    <input type="text" class="filter-input" data-column="year" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Copies</span>
+                                    <input type="text" class="filter-input" data-column="copies" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    <span>Status</span>
+                                    <select class="filter-select" data-column="status">
+                                        <option value="">All</option>
+                                        <option value="Available">Available</option>
+                                        <option value="Issued">Issued</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <span>Completion</span>
+                                    <select class="filter-select" data-column="completion_status">
+                                        <option value="">All</option>
+                                        <option value="Complete">Complete</option>
+                                        <option value="Incomplete">Incomplete</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Missing Pages">Missing Pages</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <span>Note</span>
+                                    <input type="text" class="filter-input" data-column="note" placeholder="Filter...">
+                                </th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-table-body">
+                            <!-- Books will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination">
+                        <button class="btn btn-secondary" id="prev-page">Previous</button>
+                        <span id="page-info">Page 1 of 1</span>
+                        <button class="btn btn-secondary" id="next-page">Next</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Book Page -->
+            <div id="add-book" class="page fade-in-up">
+                <h1 data-translate="addBook.title">Add New Book</h1>
+                <div class="form-container">
+                    <form id="add-book-form">
+                        <!-- Required Fields -->
+                        <div class="form-section">
+                            <h3>Required Information</h3>
+                            <div class="form-group">
+                                <label for="bookName">Book Name <span class="required">*</span></label>
+                                <input type="text" id="bookName" name="bookName" required>
+                                <div class="duplicate-suggestions" id="book-suggestions"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="author">Author <span class="required">*</span></label>
+                                <input type="text" id="author" name="author" required>
+                                <div class="duplicate-suggestions" id="author-suggestions"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Category <span class="required">*</span></label>
+                                <select id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Optional Fields -->
+                        <div class="form-section">
+                            <h3>Additional Information (Optional)</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="editor">Editor</label>
+                                    <input type="text" id="editor" name="editor">
+                                </div>
+                                <div class="form-group">
+                                    <label for="volumes">Volumes</label>
+                                    <input type="number" id="volumes" name="volumes" min="1" value="1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="publisher">Publisher</label>
+                                    <select id="publisher" name="publisher">
+                                        <option value="">Select Publisher</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="year">Year</label>
+                                    <input type="number" id="year" name="year" min="1800" max="2025">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="copies">Copies</label>
+                                    <input type="number" id="copies" name="copies" min="1" value="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="status">Status</label>
+                                    <select id="status" name="status">
+                                        <option value="Available">Available</option>
+                                        <option value="Issued">Issued</option>
+                                        <option value="Maintenance">Maintenance</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="completion_status">Completion Status</label>
+                                <select id="completion_status" name="completion_status">
+                                    <option value="">Select Status</option>
+                                    <option value="Complete">Complete</option>
+                                    <option value="Incomplete">Incomplete</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Missing Pages">Missing Pages</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="note">Note</label>
+                                <textarea id="note" name="note" rows="3" placeholder="Any special notes about this book..."></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Add Book</button>
+                            <button type="button" class="btn btn-secondary" id="import-excel">
+                                <i class="fas fa-upload"></i> Import from CSV
+                            </button>
+                            <button type="button" class="btn btn-outline" id="download-template">
+                                <i class="fas fa-download"></i> Download CSV Template
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Issue History Page -->
+            <div id="issue-history" class="page fade-in-up">
+                <h1>Issue History</h1>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>
+                                    Book Name
+                                    <input type="text" class="filter-input" data-column="bookName" placeholder="Filter...">
+                                </th>
+                                <th>
+                                    Member Name
+                                    <input type="text" class="filter-input" data-column="memberName" placeholder="Filter...">
+                                </th>
+                                <th>Issue Date</th>
+                                <th>Return Date</th>
+                                <th>
+                                    Status
+                                    <select class="filter-select" data-column="status">
+                                        <option value="">All</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Returned">Returned</option>
+                                    </select>
+                                </th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="issue-history-table-body">
+                            <!-- Issue history will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Library Log Page -->
+            <div id="library-log" class="page fade-in-up">
+                <h1>Library Log</h1>
+                <div class="log-container">
+                    <div class="add-log-entry">
+                        <textarea id="new-log-entry" placeholder="Enter new log entry..." rows="3"></textarea>
+                        <button class="btn btn-primary" id="add-log-btn">Add Entry</button>
+                    </div>
+                    <div class="log-entries" id="log-entries">
+                        <!-- Log entries will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Members Page -->
+            <div id="members" class="page fade-in-up">
+                <h1 data-translate="members.title">Manage Members</h1>
+                <div class="manage-container">
+                    <div class="add-item">
+                        <input type="text" id="new-member" data-translate-placeholder="members.newMember">
+                        <button class="btn btn-primary" id="add-member-btn" data-translate="members.addMemberBtn">Add Member</button>
+                    </div>
+                    <div class="bulk-actions" style="margin: 20px 0; display: none;" id="members-bulk-actions">
+                        <label>
+                            <input type="checkbox" id="select-all-members"> Select All
+                        </label>
+                        <button class="btn btn-danger" id="bulk-delete-members-btn" style="margin-left: 10px;">
+                            <i class="fas fa-trash"></i> Delete Selected (<span id="selected-members-count">0</span>)
+                        </button>
+                    </div>
+                    <div class="items-list" id="members-list">
+                        <!-- Members will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Categories Page -->
+            <div id="categories" class="page fade-in-up">
+                <h1 data-translate="categories.title">Manage Categories</h1>
+                <div class="manage-container">
+                    <div class="add-item">
+                        <input type="text" id="new-category" data-translate-placeholder="categories.newCategory">
+                        <button class="btn btn-primary" id="add-category-btn" data-translate="categories.addCategoryBtn">Add Category</button>
+                    </div>
+                    <div class="bulk-actions" style="margin: 20px 0; display: none;" id="categories-bulk-actions">
+                        <label>
+                            <input type="checkbox" id="select-all-categories"> Select All
+                        </label>
+                        <button class="btn btn-danger" id="bulk-delete-categories-btn" style="margin-left: 10px;">
+                            <i class="fas fa-trash"></i> Delete Selected (<span id="selected-categories-count">0</span>)
+                        </button>
+                    </div>
+                    <div class="items-list" id="categories-list">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Publishers Page -->
+            <div id="publishers" class="page fade-in-up">
+                <h1 data-translate="publishers.title">Manage Publishers</h1>
+                <div class="manage-container">
+                    <div class="add-item">
+                        <input type="text" id="new-publisher" data-translate-placeholder="publishers.newPublisher">
+                        <button class="btn btn-primary" id="add-publisher-btn" data-translate="publishers.addPublisherBtn">Add Publisher</button>
+                    </div>
+                    <div class="bulk-actions" style="margin: 20px 0; display: none;" id="publishers-bulk-actions">
+                        <label>
+                            <input type="checkbox" id="select-all-publishers"> Select All
+                        </label>
+                        <button class="btn btn-danger" id="bulk-delete-publishers-btn" style="margin-left: 10px;">
+                            <i class="fas fa-trash"></i> Delete Selected (<span id="selected-publishers-count">0</span>)
+                        </button>
+                    </div>
+                    <div class="items-list" id="publishers-list">
+                        <!-- Publishers will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal Title</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal-overlay" class="modal-overlay">
+        <div class="modal confirm-modal">
+            <div class="modal-header">
+                <h3>Confirm Action</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message">Are you sure you want to perform this action?</p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="confirm-cancel">Cancel</button>
+                    <button class="btn btn-danger" id="confirm-ok">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="scrollToTop()" title="Scroll to Top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/enhanced-interactions.js"></script>
+    </div>
+</body>
+</html>

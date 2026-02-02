@@ -1,0 +1,345 @@
+/* ================================================================
+   CENTRALIZED COLOR THEME SYSTEM
+   ================================================================
+   
+   To change the entire app's color scheme, simply:
+   1. Comment out the active theme below
+   2. Uncomment the theme you want
+   3. Refresh your browser - that's it!
+   
+   You can also create your own custom theme by copying any
+   theme block and modifying the color values.
+================================================================ */
+
+/* ================================================================
+   ACTIVE THEME: OPTION 3 - MUTED GREEN (Soothing & Fresh)
+   ================================================================ */
+:root {
+    /* Primary Colors - Main brand colors */
+    --primary-color-start: #5F9B65;
+    --primary-color-end: #4A7C59;
+    --primary-gradient: linear-gradient(135deg, #5F9B65 0%, #4A7C59 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #528857 0%, #3E6B4D 100%);
+    
+    /* Secondary Colors - Alternative accent colors */
+    --secondary-gradient: linear-gradient(135deg, #A8C686 0%, #7BA05B 100%);
+    --success-gradient: linear-gradient(135deg, #7CB342 0%, #558B2F 100%);
+    --warning-gradient: linear-gradient(135deg, #FDD835 0%, #F9A825 100%);
+    --danger-gradient: linear-gradient(135deg, #F06292 0%, #EC407A 100%);
+    
+    /* Background Colors */
+    --bg-primary: #F7FAF7;          /* Light mint cream - main background */
+    --bg-secondary: #FFFFFF;         /* Pure white - cards/containers */
+    --bg-tertiary: #EEF5EE;         /* Very light green - hover states */
+    --bg-navbar: #F7FAF7;           /* Navbar background overlay */
+    
+    /* Text Colors */
+    --text-primary: #2C3E2D;        /* Dark forest green - main text */
+    --text-secondary: #5A735B;      /* Medium green - secondary text */
+    --text-muted: #7A9A7B;          /* Light green - muted text */
+    --text-light: #FFFFFF;          /* White text for dark backgrounds */
+    
+    /* Border & Divider Colors */
+    --border-color: #D4E7D4;        /* Light green border */
+    --border-color-hover: #B8D8B8;  /* Darker green border on hover */
+    --border-color-focus: #5F9B65;  /* Primary color for focus states */
+    
+    /* Shadow Colors */
+    --shadow-light: 0 1px 3px 0 rgba(95, 155, 101, 0.1), 0 1px 2px 0 rgba(95, 155, 101, 0.06);
+    --shadow-medium: 0 4px 6px -1px rgba(95, 155, 101, 0.15), 0 2px 4px -1px rgba(95, 155, 101, 0.1);
+    --shadow-large: 0 10px 15px -3px rgba(95, 155, 101, 0.2), 0 4px 6px -2px rgba(95, 155, 101, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(95, 155, 101, 0.2), 0 10px 10px -5px rgba(95, 155, 101, 0.1);
+    
+    /* Button Specific Colors */
+    --btn-primary-bg: var(--primary-gradient);
+    --btn-primary-shadow: 0 4px 14px rgba(95, 155, 101, 0.3);
+    --btn-primary-shadow-hover: 0 8px 25px rgba(95, 155, 101, 0.4);
+    
+    --btn-secondary-bg: linear-gradient(135deg, #7A9A7B 0%, #5A735B 100%);
+    --btn-secondary-shadow: 0 4px 14px rgba(122, 154, 123, 0.3);
+    
+    --btn-success-bg: var(--success-gradient);
+    --btn-success-shadow: 0 4px 14px rgba(124, 179, 66, 0.3);
+    
+    --btn-danger-bg: var(--danger-gradient);
+    --btn-danger-shadow: 0 4px 14px rgba(98, 240, 233, 0.3);
+    
+    /* Status Badge Colors */
+    --status-available-bg: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+    --status-available-text: #2E7D32;
+    --status-available-border: #A5D6A7;
+    
+    --status-issued-bg: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    --status-issued-text: #E65100;
+    --status-issued-border: #FFCC80;
+    
+    --status-damaged-bg: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+    --status-damaged-text: #C62828;
+    --status-damaged-border: #EF9A9A;
+    
+    /* Icon & Stat Card Colors */
+    --stat-icon-bg: var(--primary-gradient);
+    --stat-icon-shadow: 0 8px 16px rgba(95, 155, 101, 0.3);
+    --stat-icon-shadow-hover: 0 12px 24px rgba(95, 155, 101, 0.4);
+    
+    /* Form Input Colors */
+    --input-bg: #FFFFFF;
+    --input-border: var(--border-color);
+    --input-border-focus: var(--border-color-focus);
+    --input-focus-shadow: 0 0 0 4px rgba(95, 155, 101, 0.15);
+    
+    /* Table Colors */
+    --table-header-bg: linear-gradient(135deg, #F7FAF7 0%, #EEF5EE 100%);
+    --table-row-hover: linear-gradient(135deg, #F7FAF7 0%, #EEF5EE 100%);
+    --table-border: var(--border-color);
+    
+    /* Modal Colors */
+    --modal-overlay: rgba(44, 62, 45, 0.6);
+    --modal-header-bg: var(--primary-gradient);
+}
+
+
+/* ================================================================
+   ALTERNATIVE THEMES (Commented Out)
+   ================================================================
+   
+   To use an alternative theme:
+   1. Comment out the active theme above (wrap it in /* */)
+   2. Uncomment the theme below (remove /* and */)
+   3. Save and refresh!
+================================================================ */
+
+
+/* ================================================================
+   OPTION 1: SOFT OCEAN BLUE (Professional & Calming)
+   ================================================================
+   
+:root {
+    --primary-color-start: #4A90E2;
+    --primary-color-end: #50B5D6;
+    --primary-gradient: linear-gradient(135deg, #4A90E2 0%, #50B5D6 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #3A7BC8 0%, #40A1BC 100%);
+    
+    --secondary-gradient: linear-gradient(135deg, #81C6E8 0%, #63B8D0 100%);
+    --success-gradient: linear-gradient(135deg, #4FC3F7 0%, #29B6F6 100%);
+    --warning-gradient: linear-gradient(135deg, #FFB74D 0%, #FF9800 100%);
+    --danger-gradient: linear-gradient(135deg, #FF8A80 0%, #FF5252 100%);
+    
+    --bg-primary: #FDFCF9;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F5F9FC;
+    --bg-navbar: #FDFCF9;
+    
+    --text-primary: #2C3E50;
+    --text-secondary: #546E7A;
+    --text-muted: #78909C;
+    --text-light: #FFFFFF;
+    
+    --border-color: #E1EAF0;
+    --border-color-hover: #C5D6E0;
+    --border-color-focus: #4A90E2;
+    
+    --shadow-light: 0 1px 3px 0 rgba(74, 144, 226, 0.1), 0 1px 2px 0 rgba(74, 144, 226, 0.06);
+    --shadow-medium: 0 4px 6px -1px rgba(74, 144, 226, 0.15), 0 2px 4px -1px rgba(74, 144, 226, 0.1);
+    --shadow-large: 0 10px 15px -3px rgba(74, 144, 226, 0.2), 0 4px 6px -2px rgba(74, 144, 226, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(74, 144, 226, 0.2), 0 10px 10px -5px rgba(74, 144, 226, 0.1);
+    
+    --btn-primary-bg: var(--primary-gradient);
+    --btn-primary-shadow: 0 4px 14px rgba(74, 144, 226, 0.3);
+    --btn-primary-shadow-hover: 0 8px 25px rgba(74, 144, 226, 0.4);
+    
+    --btn-secondary-bg: linear-gradient(135deg, #78909C 0%, #546E7A 100%);
+    --btn-secondary-shadow: 0 4px 14px rgba(120, 144, 156, 0.3);
+    
+    --btn-success-bg: var(--success-gradient);
+    --btn-success-shadow: 0 4px 14px rgba(79, 195, 247, 0.3);
+    
+    --btn-danger-bg: var(--danger-gradient);
+    --btn-danger-shadow: 0 4px 14px rgba(255, 138, 128, 0.3);
+    
+    --status-available-bg: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+    --status-available-text: #1565C0;
+    --status-available-border: #90CAF9;
+    
+    --status-issued-bg: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    --status-issued-text: #E65100;
+    --status-issued-border: #FFCC80;
+    
+    --status-damaged-bg: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+    --status-damaged-text: #C62828;
+    --status-damaged-border: #EF9A9A;
+    
+    --stat-icon-bg: var(--primary-gradient);
+    --stat-icon-shadow: 0 8px 16px rgba(74, 144, 226, 0.3);
+    --stat-icon-shadow-hover: 0 12px 24px rgba(74, 144, 226, 0.4);
+    
+    --input-bg: #FFFFFF;
+    --input-border: var(--border-color);
+    --input-border-focus: var(--border-color-focus);
+    --input-focus-shadow: 0 0 0 4px rgba(74, 144, 226, 0.15);
+    
+    --table-header-bg: linear-gradient(135deg, #FDFCF9 0%, #F5F9FC 100%);
+    --table-row-hover: linear-gradient(135deg, #FDFCF9 0%, #F5F9FC 100%);
+    --table-border: var(--border-color);
+    
+    --modal-overlay: rgba(44, 62, 80, 0.6);
+    --modal-header-bg: var(--primary-gradient);
+}
+*/
+
+
+/* ================================================================
+   OPTION 2: WARM EARTHY (Natural & Cozy)
+   ================================================================
+   
+:root {
+    --primary-color-start: #C67C4E;
+    --primary-color-end: #8B6B47;
+    --primary-gradient: linear-gradient(135deg, #C67C4E 0%, #8B6B47 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #B06A3B 0%, #7A5D3D 100%);
+    
+    --secondary-gradient: linear-gradient(135deg, #D4A574 0%, #B8956A 100%);
+    --success-gradient: linear-gradient(135deg, #8BC34A 0%, #689F38 100%);
+    --warning-gradient: linear-gradient(135deg, #FFCA28 0%, #FFA000 100%);
+    --danger-gradient: linear-gradient(135deg, #FF7043 0%, #F4511E 100%);
+    
+    --bg-primary: #F5F1E8;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F9F6EE;
+    --bg-navbar: #F5F1E8;
+    
+    --text-primary: #3E2723;
+    --text-secondary: #5D4037;
+    --text-muted: #8D6E63;
+    --text-light: #FFFFFF;
+    
+    --border-color: #E0D5C7;
+    --border-color-hover: #D0C4B8;
+    --border-color-focus: #C67C4E;
+    
+    --shadow-light: 0 1px 3px 0 rgba(198, 124, 78, 0.1), 0 1px 2px 0 rgba(198, 124, 78, 0.06);
+    --shadow-medium: 0 4px 6px -1px rgba(198, 124, 78, 0.15), 0 2px 4px -1px rgba(198, 124, 78, 0.1);
+    --shadow-large: 0 10px 15px -3px rgba(198, 124, 78, 0.2), 0 4px 6px -2px rgba(198, 124, 78, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(198, 124, 78, 0.2), 0 10px 10px -5px rgba(198, 124, 78, 0.1);
+    
+    --btn-primary-bg: var(--primary-gradient);
+    --btn-primary-shadow: 0 4px 14px rgba(198, 124, 78, 0.3);
+    --btn-primary-shadow-hover: 0 8px 25px rgba(198, 124, 78, 0.4);
+    
+    --btn-secondary-bg: linear-gradient(135deg, #8D6E63 0%, #6D4C41 100%);
+    --btn-secondary-shadow: 0 4px 14px rgba(141, 110, 99, 0.3);
+    
+    --btn-success-bg: var(--success-gradient);
+    --btn-success-shadow: 0 4px 14px rgba(139, 195, 74, 0.3);
+    
+    --btn-danger-bg: var(--danger-gradient);
+    --btn-danger-shadow: 0 4px 14px rgba(255, 112, 67, 0.3);
+    
+    --status-available-bg: linear-gradient(135deg, #F1F8E9 0%, #DCEDC8 100%);
+    --status-available-text: #33691E;
+    --status-available-border: #C5E1A5;
+    
+    --status-issued-bg: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+    --status-issued-text: #F57F17;
+    --status-issued-border: #FFE082;
+    
+    --status-damaged-bg: linear-gradient(135deg, #FBE9E7 0%, #FFCCBC 100%);
+    --status-damaged-text: #BF360C;
+    --status-damaged-border: #FFAB91;
+    
+    --stat-icon-bg: var(--primary-gradient);
+    --stat-icon-shadow: 0 8px 16px rgba(198, 124, 78, 0.3);
+    --stat-icon-shadow-hover: 0 12px 24px rgba(198, 124, 78, 0.4);
+    
+    --input-bg: #FFFFFF;
+    --input-border: var(--border-color);
+    --input-border-focus: var(--border-color-focus);
+    --input-focus-shadow: 0 0 0 4px rgba(198, 124, 78, 0.15);
+    
+    --table-header-bg: linear-gradient(135deg, #F5F1E8 0%, #F9F6EE 100%);
+    --table-row-hover: linear-gradient(135deg, #F5F1E8 0%, #F9F6EE 100%);
+    --table-border: var(--border-color);
+    
+    --modal-overlay: rgba(62, 39, 35, 0.6);
+    --modal-header-bg: var(--primary-gradient);
+}
+*/
+
+
+/* ================================================================
+   CURRENT/ORIGINAL PURPLE THEME (For Reference)
+   ================================================================
+   
+:root {
+    --primary-color-start: #667eea;
+    --primary-color-end: #764ba2;
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --primary-gradient-hover: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f1f5f9;
+    --bg-navbar: #f8fafc;
+    
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --text-light: #ffffff;
+    
+    --border-color: #e2e8f0;
+    --border-color-hover: #cbd5e1;
+    --border-color-focus: #667eea;
+    
+    --shadow-light: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --btn-primary-bg: var(--primary-gradient);
+    --btn-primary-shadow: 0 4px 14px rgba(102, 126, 234, 0.3);
+    --btn-primary-shadow-hover: 0 8px 25px rgba(102, 126, 234, 0.4);
+    
+    --btn-secondary-bg: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    --btn-secondary-shadow: 0 4px 14px rgba(108, 117, 125, 0.3);
+    
+    --btn-success-bg: var(--success-gradient);
+    --btn-success-shadow: 0 4px 14px rgba(79, 172, 254, 0.3);
+    
+    --btn-danger-bg: var(--danger-gradient);
+    --btn-danger-shadow: 0 4px 14px rgba(250, 112, 154, 0.3);
+    
+    --status-available-bg: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    --status-available-text: #155724;
+    --status-available-border: #c3e6cb;
+    
+    --status-issued-bg: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    --status-issued-text: #721c24;
+    --status-issued-border: #f5c6cb;
+    
+    --status-damaged-bg: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    --status-damaged-text: #856404;
+    --status-damaged-border: #ffeaa7;
+    
+    --stat-icon-bg: var(--primary-gradient);
+    --stat-icon-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    --stat-icon-shadow-hover: 0 12px 24px rgba(102, 126, 234, 0.4);
+    
+    --input-bg: #ffffff;
+    --input-border: var(--border-color);
+    --input-border-focus: var(--border-color-focus);
+    --input-focus-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    
+    --table-header-bg: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    --table-row-hover: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    --table-border: var(--border-color);
+    
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+    --modal-header-bg: var(--primary-gradient);
+}
+*/
+

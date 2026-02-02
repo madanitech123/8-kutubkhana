@@ -1,0 +1,90 @@
+/* Exact Styling from Screenshot - Book Name Highlighting */
+
+/* Book Name Column - Clean Style */
+.data-table td:nth-child(3) { /* Book Name column */
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a365d;
+    padding: 8px 12px;
+}
+
+/* Author Column - Clean, no icons */
+.data-table td:nth-child(4) { /* Author column */
+    font-size: 14px;
+    color: #495057;
+    font-style: italic;
+}
+
+/* Category Column - Clean, no badges */
+.data-table td:nth-child(5) { /* Category column */
+    font-size: 13px;
+    color: #495057;
+    font-weight: 500;
+}
+
+/* Editor Column - Clean, no icons */
+.data-table td:nth-child(6) { /* Editor column */
+    color: #6c757d;
+    font-size: 13px;
+}
+
+/* Status Icons - Plus and Minus */
+.data-table .status-icon {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 50%;
+    color: white;
+}
+
+.data-table .status-icon.available {
+    background: #28a745; /* Green for available (+) */
+    color: white;
+}
+
+.data-table .status-icon.issued {
+    background: #dc3545; /* Red for issued (-) */
+    color: white;
+}
+
+/* RTL (Right-to-Left) - Force Implementation with Maximum Specificity */
+#books .table-container .data-table[dir="rtl"] {
+    direction: rtl !important;
+    display: table !important;
+}
+
+/* RTL Text Alignment - Maximum Specificity */
+#books .table-container .data-table[dir="rtl"] thead tr th,
+#books .table-container .data-table[dir="rtl"] tbody tr td {
+    text-align: right !important;
+    direction: rtl !important;
+    display: table-cell !important;
+}
+
+/* RTL Action buttons alignment */
+#books .table-container .data-table[dir="rtl"] .action-buttons {
+    justify-content: flex-start !important;
+}
+
+/* RTL Status icons alignment */
+#books .table-container .data-table[dir="rtl"] .status-icon {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* RTL Checkboxes alignment */
+#books .table-container .data-table[dir="rtl"] input[type="checkbox"] {
+    margin-left: 5px !important;
+    margin-right: 0 !important;
+}
+
+/* RTL Filter inputs alignment */
+#books .table-container .data-table[dir="rtl"] .filter-input,
+#books .table-container .data-table[dir="rtl"] .filter-select {
+    text-align: right !important;
+    direction: rtl !important;
+}

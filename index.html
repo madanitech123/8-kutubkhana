@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مكتبة المصباح - نظام إدارة المكتبة</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="login-page" class="login-page active">
+        <div class="login-container">
+            <h1><i class="fas fa-book-open"></i> مكتبة المصباح</h1>
+            <div class="login-form-wrapper">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">اسم المستخدم</label>
+                        <input type="text" id="username" name="username" placeholder="أدخل اسم المستخدم" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">كلمة المرور</label>
+                        <input type="password" id="password" name="password" placeholder="أدخل كلمة المرور" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container" style="display: none;">
+        <!-- Top Navigation Bar -->
+        <header class="top-navbar">
+            <!-- Row 1: App Title -->
+            <div class="navbar-title">
+                <i class="fas fa-book-open"></i>
+                <h1>مكتبة المصباح</h1>
+            </div>
+
+            <!-- Row 2: Description -->
+            <div class="navbar-description">
+                <p>نظام متكامل لإدارة المكتبة - تنظيم الكتب والإعارات والأعضاء</p>
+            </div>
+
+            <!-- Row 3: Navigation -->
+            <div class="navbar-controls">
+                <!-- Mobile Menu Toggle -->
+                <button id="mobile-menu-toggle" class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Desktop Navigation -->
+                <nav class="navbar-menu">
+                    <ul class="nav-menu">
+                        <li class="nav-item active" data-page="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>لوحة المعلومات</span>
+                        </li>
+                        <li class="nav-item" data-page="books">
+                            <i class="fas fa-list"></i>
+                            <span>قائمة الكتب</span>
+                        </li>
+                        <li class="nav-item" data-page="add-book">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>إضافة كتاب</span>
+                        </li>
+                        <li class="nav-item" data-page="loans">
+                            <i class="fas fa-history"></i>
+                            <span>سجل الإعارات</span>
+                        </li>
+                        <li class="nav-item" data-page="diary">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>يوميات المكتبة</span>
+                        </li>
+                        <li class="nav-item" data-page="members">
+                            <i class="fas fa-users"></i>
+                            <span>الأعضاء</span>
+                        </li>
+                        <li class="nav-item" data-page="categories">
+                            <i class="fas fa-tags"></i>
+                            <span>التصنيفات</span>
+                        </li>
+                        <li class="nav-item" data-page="publishers">
+                            <i class="fas fa-building"></i>
+                            <span>دور النشر</span>
+                        </li>
+                        <!-- Logout Button -->
+                        <li class="nav-logout">
+                            <button id="logout-btn" class="btn-logout" title="تسجيل الخروج">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Mobile Navigation Dropdown -->
+            <nav class="mobile-nav-menu">
+                <ul class="mobile-nav-list">
+                    <li class="nav-item active" data-page="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>لوحة المعلومات</span>
+                    </li>
+                    <li class="nav-item" data-page="books">
+                        <i class="fas fa-list"></i>
+                        <span>قائمة الكتب</span>
+                    </li>
+                    <li class="nav-item" data-page="add-book">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>إضافة كتاب</span>
+                    </li>
+                    <li class="nav-item" data-page="loans">
+                        <i class="fas fa-history"></i>
+                        <span>سجل الإعارات</span>
+                    </li>
+                    <li class="nav-item" data-page="diary">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>يوميات المكتبة</span>
+                    </li>
+                    <li class="nav-item" data-page="members">
+                        <i class="fas fa-users"></i>
+                        <span>الأعضاء</span>
+                    </li>
+                    <li class="nav-item" data-page="categories">
+                        <i class="fas fa-tags"></i>
+                        <span>التصنيفات</span>
+                    </li>
+                    <li class="nav-item" data-page="publishers">
+                        <i class="fas fa-building"></i>
+                        <span>دور النشر</span>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard-page" class="page active">
+                <h1>لوحة المعلومات</h1>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon books">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>إجمالي الكتب</h3>
+                            <p class="stat-number" id="total-books">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon authors">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>عدد المؤلفين</h3>
+                            <p class="stat-number" id="total-authors">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon categories">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>التصنيفات</h3>
+                            <p class="stat-number" id="total-categories">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon available">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>الكتب المتاحة</h3>
+                            <p class="stat-number" id="books-available">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card clickable" id="books-issued-card">
+                        <div class="stat-icon issued">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>الكتب المُعارة</h3>
+                            <p class="stat-number" id="books-issued">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon members">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>الأعضاء</h3>
+                            <p class="stat-number" id="total-members">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Books List Page -->
+            <div id="books-page" class="page">
+                <div class="page-header">
+                    <h1>قائمة الكتب</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="export-csv-btn">
+                            <i class="fas fa-download"></i> تصدير CSV
+                        </button>
+                        <button class="btn btn-danger" id="bulk-delete-btn" style="display: none;">
+                            <i class="fas fa-trash"></i> حذف المحدد (<span id="selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="books-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="select-all-books">
+                                </th>
+                                <th>
+                                    <span>اسم الكتاب</span>
+                                    <input type="text" class="filter-input" data-column="name" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>المؤلف</span>
+                                    <input type="text" class="filter-input" data-column="author" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>التصنيف</span>
+                                    <input type="text" class="filter-input" data-column="category" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>المحقق</span>
+                                    <input type="text" class="filter-input" data-column="editor" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>الأجزاء</span>
+                                    <input type="text" class="filter-input" data-column="parts" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>دار النشر</span>
+                                    <input type="text" class="filter-input" data-column="publisher" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>السنة</span>
+                                    <input type="text" class="filter-input" data-column="year" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>النسخ</span>
+                                    <input type="text" class="filter-input" data-column="copies" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>الحالة</span>
+                                    <select class="filter-select" data-column="status">
+                                        <option value="">الكل</option>
+                                        <option value="متاح">متاح</option>
+                                        <option value="معار">معار</option>
+                                    </select>
+                                </th>
+                                <th>
+                                    <span>الخزانة</span>
+                                    <input type="text" class="filter-input" data-column="cabinet" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>الرف</span>
+                                    <input type="text" class="filter-input" data-column="shelf" placeholder="بحث...">
+                                </th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-tbody">
+                            <!-- Books will be populated here -->
+                        </tbody>
+                    </table>
+                    <div class="pagination">
+                        <button class="btn btn-secondary" id="prev-page">
+                            <i class="fas fa-chevron-right"></i> السابق
+                        </button>
+                        <span id="page-info">صفحة 1 من 1</span>
+                        <button class="btn btn-secondary" id="next-page">
+                            التالي <i class="fas fa-chevron-left"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Book Page -->
+            <div id="add-book-page" class="page">
+                <h1>إضافة كتاب جديد</h1>
+                <div class="form-container">
+                    <form id="add-book-form">
+                        <!-- Required Fields -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-asterisk"></i> المعلومات الأساسية</h3>
+                            <div class="form-group">
+                                <label for="book-name">اسم الكتاب <span class="required">*</span></label>
+                                <input type="text" id="book-name" name="bookName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="book-author">المؤلف <span class="required">*</span></label>
+                                <input type="text" id="book-author" name="author" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="book-category">التصنيف <span class="required">*</span></label>
+                                <select id="book-category" name="category" required>
+                                    <option value="">اختر التصنيف</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Optional Fields -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-info-circle"></i> معلومات إضافية (اختياري)</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="book-editor">المحقق/المحرر</label>
+                                    <input type="text" id="book-editor" name="editor">
+                                </div>
+                                <div class="form-group">
+                                    <label for="book-parts">عدد الأجزاء</label>
+                                    <input type="number" id="book-parts" name="parts" min="1" value="1">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="book-publisher">دار النشر</label>
+                                    <select id="book-publisher" name="publisher">
+                                        <option value="">اختر دار النشر</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="book-year">سنة النشر</label>
+                                    <input type="number" id="book-year" name="year" min="1400" max="2030">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="book-copies">عدد النسخ</label>
+                                    <input type="number" id="book-copies" name="copies" min="1" value="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="book-status">الحالة</label>
+                                    <select id="book-status" name="status">
+                                        <option value="متاح">متاح</option>
+                                        <option value="معار">معار</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="book-cabinet">رقم الخزانة</label>
+                                    <input type="text" id="book-cabinet" name="cabinet">
+                                </div>
+                                <div class="form-group">
+                                    <label for="book-shelf">رقم الرف</label>
+                                    <input type="text" id="book-shelf" name="shelf">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="book-notes">ملاحظات</label>
+                                <textarea id="book-notes" name="notes" rows="3" placeholder="أي ملاحظات خاصة بالكتاب..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> إضافة الكتاب
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="import-csv-btn">
+                                <i class="fas fa-upload"></i> استيراد من CSV
+                            </button>
+                            <button type="button" class="btn btn-outline" id="download-template-btn">
+                                <i class="fas fa-download"></i> تنزيل نموذج CSV
+                            </button>
+                        </div>
+                    </form>
+                    <input type="file" id="csv-file-input" accept=".csv,.xlsx" style="display: none;">
+                </div>
+            </div>
+
+            <!-- Loans History Page -->
+            <div id="loans-page" class="page">
+                <div class="page-header">
+                    <h1>سجل الإعارات</h1>
+                    <button class="btn btn-primary" id="new-loan-btn">
+                        <i class="fas fa-plus"></i> إعارة جديدة
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>
+                                    <span>الكتاب</span>
+                                    <input type="text" class="filter-input" data-column="bookName" placeholder="بحث...">
+                                </th>
+                                <th>
+                                    <span>العضو</span>
+                                    <input type="text" class="filter-input" data-column="memberName" placeholder="بحث...">
+                                </th>
+                                <th>تاريخ الإعارة</th>
+                                <th>تاريخ الإرجاع</th>
+                                <th>
+                                    <span>الحالة</span>
+                                    <select class="filter-select" data-column="status">
+                                        <option value="">الكل</option>
+                                        <option value="معار">معار</option>
+                                        <option value="مُرجع">مُرجع</option>
+                                    </select>
+                                </th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loans-tbody">
+                            <!-- Loans will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Diary/Log Page -->
+            <div id="diary-page" class="page">
+                <h1>يوميات المكتبة</h1>
+                <div class="log-container">
+                    <div class="add-log-entry">
+                        <div class="form-group">
+                            <select id="diary-category">
+                                <option value="ضيف">ضيف</option>
+                                <option value="صيانة">صيانة</option>
+                                <option value="شراء">شراء</option>
+                                <option value="أخرى">أخرى</option>
+                            </select>
+                        </div>
+                        <textarea id="new-log-entry" placeholder="أدخل محتوى اليومية..." rows="3"></textarea>
+                        <button class="btn btn-primary" id="add-log-btn">
+                            <i class="fas fa-plus"></i> إضافة يومية
+                        </button>
+                    </div>
+                    <div class="log-entries" id="log-entries">
+                        <!-- Log entries will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Members Page -->
+            <div id="members-page" class="page">
+                <h1>إدارة الأعضاء</h1>
+                <div class="manage-container">
+                    <div class="add-item">
+                        <input type="text" id="new-member-name" placeholder="اسم العضو">
+                        <input type="text" id="new-member-phone" placeholder="رقم الهاتف">
+                        <input type="text" id="new-member-address" placeholder="العنوان">
+                        <button class="btn btn-primary" id="add-member-btn">
+                            <i class="fas fa-plus"></i> إضافة عضو
+                        </button>
+                    </div>
+                    <div class="bulk-actions" id="members-bulk-actions" style="display: none;">
+                        <label>
+                            <input type="checkbox" id="select-all-members"> تحديد الكل
+                        </label>
+                        <button class="btn btn-danger" id="bulk-delete-members-btn">
+                            <i class="fas fa-trash"></i> حذف المحدد (<span id="selected-members-count">0</span>)
+                        </button>
+                    </div>
+                    <div class="items-list" id="members-list">
+                        <!-- Members will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Page -->
+            <div id="categories-page" class="page">
+                <h1>إدارة التصنيفات</h1>
+                <div class="manage-container">
+                    <div class="add-item">
+                        <input type="text" id="new-category" placeholder="اسم التصنيف الجديد">
+                        <button class="btn btn-primary" id="add-category-btn">
+                            <i class="fas fa-plus"></i> إضافة تصنيف
+                        </button>
+                    </div>
+                    <div class="items-list" id="categories-list">
+                        <!-- Categories will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Publishers Page -->
+            <div id="publishers-page" class="page">
+                <h1>إدارة دور النشر</h1>
+                <div class="manage-container">
+                    <div class="add-item">
+                        <input type="text" id="new-publisher" placeholder="اسم دار النشر الجديدة">
+                        <button class="btn btn-primary" id="add-publisher-btn">
+                            <i class="fas fa-plus"></i> إضافة دار نشر
+                        </button>
+                    </div>
+                    <div class="items-list" id="publishers-list">
+                        <!-- Publishers will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">تعديل</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal-overlay" class="modal-overlay">
+        <div class="modal confirm-modal">
+            <div class="modal-header">
+                <h3>تأكيد العملية</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message">هل أنت متأكد من تنفيذ هذا الإجراء؟</p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="confirm-cancel">إلغاء</button>
+                    <button class="btn btn-danger" id="confirm-ok">تأكيد</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Modal -->
+    <div id="loan-modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>إعارة جديدة</h3>
+                <button class="modal-close" id="loan-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="loan-form">
+                    <div class="form-group">
+                        <label>اختيار الكتاب <span class="required">*</span></label>
+                        <select id="loan-book" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>اختيار العضو <span class="required">*</span></label>
+                        <select id="loan-member" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>تاريخ الإعارة</label>
+                        <input type="date" id="loan-date" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i> تأكيد الإعارة
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
