@@ -487,39 +487,48 @@ const LocalStorageDataManager = {
 
         const imported = [];
         let skipped = 0;
-        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        let skippedDuplicates = 0;
+        const existingBooks = this.getBooks();
 
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].match(/("([^"]|"")*"|[^,]*)/g) || [];
             const cleanValues = values.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
 
-            // Required: book name, author, cabinet (storage), shelf only
             const name = (cleanValues[0] || '').trim();
             const author = (cleanValues[1] || '').trim();
             const cabinet = (cleanValues[9] || '').trim();
             const shelf = (cleanValues[10] || '').trim();
-            if (name && author && cabinet && shelf) {
-                const book = {
-                    name,
-                    author,
-                    category: cleanValues[2] || 'عام',
-                    editor: cleanValues[3] || '',
-                    parts: parseInt(cleanValues[4]) || 1,
-                    publisher: cleanValues[5] || '',
-                    year: cleanValues[6] || '',
-                    copies: parseInt(cleanValues[7]) || 1,
-                    status: cleanValues[8] || 'متاح',
-                    cabinet,
-                    shelf,
-                    notes: cleanValues[11] || ''
-                };
-                imported.push(this.addBook(book));
-            } else {
+            if (!name || !author || !cabinet || !shelf) {
                 skipped++;
+                continue;
             }
+            const isDup = existingBooks.some(b =>
+                (b.name || '').trim().toLowerCase() === name.toLowerCase() &&
+                (b.author || '').trim().toLowerCase() === author.toLowerCase()
+            );
+            if (isDup) {
+                skippedDuplicates++;
+                continue;
+            }
+            const book = {
+                name,
+                author,
+                category: cleanValues[2] || 'عام',
+                editor: cleanValues[3] || '',
+                parts: parseInt(cleanValues[4]) || 1,
+                publisher: cleanValues[5] || '',
+                year: cleanValues[6] || '',
+                copies: parseInt(cleanValues[7]) || 1,
+                status: cleanValues[8] || 'متاح',
+                cabinet,
+                shelf,
+                notes: cleanValues[11] || ''
+            };
+            imported.push(this.addBook(book));
+            existingBooks.push(book);
         }
 
-        return { success: true, count: imported.length, books: imported, skipped };
+        return { success: true, count: imported.length, books: imported, skipped, skippedDuplicates };
     },
 
     // Clear all data (for testing)

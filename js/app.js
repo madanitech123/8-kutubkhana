@@ -91,6 +91,7 @@ const App = {
                 this.renderDashboard();
                 break;
             case 'books':
+                document.getElementById('global-search-input').value = this.state.globalSearch || '';
                 this.renderBooks();
                 break;
             case 'add-book':
@@ -110,6 +111,8 @@ const App = {
                 break;
             case 'publishers':
                 this.renderPublishers();
+                break;
+            case 'settings':
                 break;
         }
     },
@@ -199,6 +202,19 @@ const App = {
     getFilteredBooks() {
         let books = DataManager.getBooks();
         const filters = this.state.filters;
+        const q = (this.state.globalSearch || '').trim().toLowerCase();
+
+        if (q) {
+            books = books.filter(book => {
+                const name = (book.name || '').toLowerCase();
+                const author = (book.author || '').toLowerCase();
+                const category = (book.category || '').toLowerCase();
+                const publisher = (book.publisher || '').toLowerCase();
+                const cabinet = (book.cabinet || '').toLowerCase();
+                const shelf = (book.shelf || '').toLowerCase();
+                return name.includes(q) || author.includes(q) || category.includes(q) || publisher.includes(q) || cabinet.includes(q) || shelf.includes(q);
+            });
+        }
 
         Object.keys(filters).forEach(column => {
             const value = filters[column]?.toLowerCase();
@@ -389,6 +405,14 @@ const App = {
             notes: formData.get('notes') || ''
         };
 
+        const existing = DataManager.getBooks().find(b =>
+            (b.name || '').trim().toLowerCase() === (book.name || '').trim().toLowerCase() &&
+            (b.author || '').trim().toLowerCase() === (book.author || '').trim().toLowerCase()
+        );
+        if (existing && !confirm(`كتاب مشابه موجود: "${existing.name}" - ${existing.author}.\nهل تريد الإضافة رغم ذلك؟`)) {
+            return;
+        }
+
         await Promise.resolve(DataManager.addBook(book));
         form.reset();
         alert('تمت إضافة الكتاب بنجاح!');
@@ -433,7 +457,10 @@ const App = {
             if (result.success) {
                 let msg = `تم استيراد ${result.count} كتاب بنجاح!`;
                 if (result.skipped > 0) {
-                    msg += `\nتم تخطي ${result.skipped} صف لعدم اكتمال الحقول الإلزامية (اسم الكتاب، المؤلف، رقم الخزانة، رقم الرف).`;
+                    msg += `\nتم تخطي ${result.skipped} صف لعدم اكتمال الحقول الإلزامية.`;
+                }
+                if (result.skippedDuplicates > 0) {
+                    msg += `\nتم تخطي ${result.skippedDuplicates} كتاب مكرر (نفس الاسم والمؤلف).`;
                 }
                 alert(msg);
                 this.navigateTo('books');
@@ -807,6 +834,11 @@ const App = {
     },
 
     confirmDeleteMember(memberId) {
+        const activeLoans = DataManager.getActiveLoans().filter(l => l.memberId === memberId);
+        if (activeLoans.length > 0) {
+            alert('لا يمكن حذف هذا العضو. يوجد إعارات نشطة له. يرجى إرجاع الكتب أولاً.');
+            return;
+        }
         this.showConfirmModal('هل أنت متأكد من حذف هذا العضو؟', async () => {
             await Promise.resolve(DataManager.deleteMember(memberId));
             this.state.selectedMembers.delete(memberId);
@@ -844,9 +876,22 @@ const App = {
     },
 
     confirmBulkDeleteMembers() {
-        const count = this.state.selectedMembers.size;
-        this.showConfirmModal(`هل أنت متأكد من حذف ${count} عضو؟`, async () => {
-            await Promise.resolve(DataManager.deleteMembers(Array.from(this.state.selectedMembers)));
+        const ids = Array.from(this.state.selectedMembers);
+        const withActive = ids.filter(id => DataManager.getActiveLoans().some(l => l.memberId === id));
+        const canDelete = ids.filter(id => !withActive.includes(id));
+        if (withActive.length > 0) {
+            alert(`لا يمكن حذف ${withActive.length} عضو/أعضاء لأن لديهم إعارات نشطة. يرجى إرجاع الكتب أولاً.\n\nسيتم حذف ${canDelete.length} عضو فقط.`);
+            if (canDelete.length === 0) return;
+            this.showConfirmModal(`حذف ${canDelete.length} عضو؟`, async () => {
+                await Promise.resolve(DataManager.deleteMembers(canDelete));
+                this.state.selectedMembers.clear();
+                this.renderMembers();
+                this.renderDashboard();
+            });
+            return;
+        }
+        this.showConfirmModal(`هل أنت متأكد من حذف ${ids.length} عضو؟`, async () => {
+            await Promise.resolve(DataManager.deleteMembers(ids));
             this.state.selectedMembers.clear();
             this.renderMembers();
             this.renderDashboard();
@@ -1017,6 +1062,58 @@ const App = {
         });
     },
 
+    // ========== SETTINGS - BACKUP ==========
+    exportBackupExcel() {
+        const books = document.getElementById('backup-books').checked;
+        const members = document.getElementById('backup-members').checked;
+        const loans = document.getElementById('backup-loans').checked;
+        const diary = document.getElementById('backup-diary').checked;
+        if (!books && !members && !loans && !diary) {
+            alert('اختر عنصراً واحداً على الأقل للتصدير.');
+            return;
+        }
+        if (typeof XLSX === 'undefined') {
+            alert('مكتبة Excel غير متوفرة.');
+            return;
+        }
+        const wb = XLSX.utils.book_new();
+        if (books) {
+            const bookList = DataManager.getBooks();
+            const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الخزانة', 'الرف', 'ملاحظات'];
+            const rows = bookList.map(b => [b.name || '', b.author || '', b.category || '', b.editor || '', b.parts || '', b.publisher || '', b.year || '', b.copies || '', b.status || '', b.cabinet || '', b.shelf || '', b.notes || '']);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, 'الكتب');
+        }
+        if (members) {
+            const memberList = DataManager.getMembers();
+            const headers = ['الاسم', 'رقم الهاتف', 'العنوان'];
+            const rows = memberList.map(m => [m.name || '', m.phone || '', m.address || '']);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, 'الأعضاء');
+        }
+        if (loans) {
+            const loanList = DataManager.getLoans();
+            const bookList = DataManager.getBooks();
+            const memberList = DataManager.getMembers();
+            const getBookName = id => (bookList.find(b => b.id === id) || {}).name || '-';
+            const getMemberName = id => (memberList.find(m => m.id === id) || {}).name || '-';
+            const headers = ['الكتاب', 'العضو', 'تاريخ الإعارة', 'تاريخ الإرجاع', 'الحالة'];
+            const rows = loanList.map(l => [getBookName(l.bookId), getMemberName(l.memberId), l.loanDate || '', l.returnDate || '', l.status || '']);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, 'الإعارات');
+        }
+        if (diary) {
+            const diaryList = DataManager.getDiary();
+            const headers = ['التاريخ', 'النوع', 'المحتوى'];
+            const rows = diaryList.map(d => [d.date || '', d.category || '', (d.content || d.details || '')]);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            XLSX.utils.book_append_sheet(wb, ws, 'اليوميات');
+        }
+        const name = `backup_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, name);
+        alert('تم تصدير النسخة الاحتياطية بنجاح.');
+    },
+
     // ========== MODALS ==========
     openModal() {
         document.getElementById('modal-overlay').classList.add('active');
@@ -1163,6 +1260,48 @@ const App = {
 
         // Publishers
         document.getElementById('add-publisher-btn').addEventListener('click', () => this.handleAddPublisher());
+
+        // Settings - backup export
+        document.getElementById('export-backup-btn').addEventListener('click', () => this.exportBackupExcel());
+
+        // Global search: icon opens popover, submit runs search and closes popover
+        const searchInput = document.getElementById('global-search-input');
+        const searchPopover = document.getElementById('search-popover');
+        const searchToggle = document.getElementById('global-search-toggle');
+
+        const runSearch = () => {
+            const q = searchInput.value.trim();
+            this.state.globalSearch = q || '';
+            searchPopover.classList.remove('active');
+            this.navigateTo('books');
+        };
+
+        searchToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = searchPopover.classList.toggle('active');
+            searchPopover.setAttribute('aria-hidden', !isOpen);
+            if (isOpen) {
+                const rect = searchToggle.getBoundingClientRect();
+                searchPopover.style.top = (rect.bottom + 6) + 'px';
+                searchPopover.style.left = rect.left + 'px';
+                searchPopover.style.right = 'auto';
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        });
+
+        document.getElementById('global-search-btn').addEventListener('click', runSearch);
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
+        });
+
+        document.addEventListener('click', (e) => {
+            const insidePopover = searchPopover.contains(e.target);
+            const onSearchButton = searchToggle === e.target || searchToggle.contains(e.target);
+            if (searchPopover.classList.contains('active') && !insidePopover && !onSearchButton) {
+                searchPopover.classList.remove('active');
+                searchPopover.setAttribute('aria-hidden', 'true');
+            }
+        });
 
         // Modal close buttons
         document.getElementById('modal-close').addEventListener('click', () => this.closeModal());

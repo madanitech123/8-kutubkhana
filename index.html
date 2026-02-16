@@ -46,13 +46,19 @@
                 <h1>مكتبة المصباح</h1>
             </div>
 
-            <!-- Row 2: Description + Hamburger (mobile: hamburger on side, text in middle) -->
+            <!-- Row 2: Hamburger (one side) | Tag (middle) | Search (other side). Click search = popup. -->
             <div class="navbar-description">
-                <span class="navbar-desc-spacer" aria-hidden="true"></span>
-                <p>نظام متكامل لإدارة المكتبة</p>
-                <button id="mobile-menu-toggle" class="mobile-menu-btn" type="button" aria-label="القائمة">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <div class="navbar-desc-side">
+                    <button id="mobile-menu-toggle" class="mobile-menu-btn" type="button" aria-label="القائمة">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+                <p class="navbar-tag">نظام متكامل لإدارة المكتبة</p>
+                <div class="navbar-search-wrap">
+                    <button id="global-search-toggle" class="search-toggle-btn" type="button" aria-label="بحث" title="بحث">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Row 3: Navigation -->
@@ -91,6 +97,10 @@
                         <li class="nav-item" data-page="publishers">
                             <i class="fas fa-building"></i>
                             <span>دور النشر</span>
+                        </li>
+                        <li class="nav-item" data-page="settings">
+                            <i class="fas fa-cog"></i>
+                            <span>الإعدادات</span>
                         </li>
                         <!-- Logout Button -->
                         <li class="nav-logout">
@@ -137,6 +147,10 @@
                     <button type="button" class="mobile-nav-card" data-page="publishers">
                         <span class="mobile-nav-icon"><i class="fas fa-building"></i></span>
                         <span class="mobile-nav-label">دور النشر</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="settings">
+                        <span class="mobile-nav-icon"><i class="fas fa-cog"></i></span>
+                        <span class="mobile-nav-label">الإعدادات</span>
                     </button>
                 </div>
                 <div class="mobile-nav-footer">
@@ -514,6 +528,24 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Settings Page -->
+            <div id="settings-page" class="page">
+                <h1>الإعدادات</h1>
+                <div class="settings-section backup-section">
+                    <h2><i class="fas fa-file-excel"></i> تصدير نسخة احتياطية (Excel)</h2>
+                    <p class="settings-desc">اختر ما تريد تصديره ثم اضغط تصدير. سيتم إنشاء ملف Excel بجداول منفصلة.</p>
+                    <div class="backup-options">
+                        <label class="backup-option"><input type="checkbox" id="backup-books" checked> الكتب</label>
+                        <label class="backup-option"><input type="checkbox" id="backup-members" checked> الأعضاء</label>
+                        <label class="backup-option"><input type="checkbox" id="backup-loans" checked> الإعارات</label>
+                        <label class="backup-option"><input type="checkbox" id="backup-diary" checked> اليوميات</label>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="export-backup-btn">
+                        <i class="fas fa-download"></i> تصدير Excel
+                    </button>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -575,6 +607,12 @@
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- Search popover: floating, appended to body so it never shifts layout -->
+    <div id="search-popover" class="search-popover" aria-hidden="true">
+        <input type="text" id="global-search-input" placeholder="بحث في الكتب..." autocomplete="off">
+        <button type="button" id="global-search-btn" class="btn btn-sm btn-primary">بحث</button>
     </div>
 
     <!-- Back to Top Button -->

@@ -198,9 +198,7 @@ body {
 .navbar-description {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: var(--spacing-md);
-    text-align: center;
+    justify-content: space-between;
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
     color: var(--text-secondary);
@@ -208,23 +206,86 @@ body {
     border-bottom: 1px solid var(--border-light);
 }
 
-.navbar-description p {
+/* Tag in the middle; hamburger and search on opposite sides (same width so tag stays centered) */
+.navbar-tag {
     margin: 0;
     flex: 1;
     text-align: center;
 }
 
-/* Spacer so on mobile the text stays centered (same width as hamburger) */
-.navbar-desc-spacer {
-    display: none;
+.navbar-desc-side,
+.navbar-search-wrap {
     width: 2.5rem;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.navbar-search-wrap {
+    position: relative;
 }
 
 .navbar-controls {
     padding: var(--spacing-sm) var(--spacing-md);
     display: flex;
+    align-items: center;
     justify-content: center;
+}
+
+/* Search: icon button in description row, popup on click */
+
+.search-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.search-toggle-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.search-popover {
+    display: none;
+    position: fixed;
+    padding: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1001;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.search-popover.active {
+    display: flex;
+}
+
+.search-popover input {
+    width: 200px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+
+.search-popover input:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
 
 .mobile-menu-btn {
@@ -808,6 +869,47 @@ body {
 }
 
 /* === Manage Pages (Categories, Publishers, Members) === */
+.settings-section {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid var(--border-light);
+}
+
+.settings-section h2 {
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-desc {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0 0 1rem 0;
+}
+
+.backup-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.backup-option {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+.backup-option input {
+    cursor: pointer;
+}
+
 .manage-container {
     background: var(--card-bg);
     border-radius: var(--radius-lg);

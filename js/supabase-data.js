@@ -448,6 +448,8 @@
             if (lines.length < 2) return Promise.resolve({ success: false, message: 'الملف فارغ أو غير صالح' });
             const promises = [];
             let skipped = 0;
+            let skippedDuplicates = 0;
+            const existing = cache.books.slice();
             for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].match(/("([^"]|"")*"|[^,]*)/g) || [];
                 const cleanValues = values.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
@@ -457,6 +459,14 @@
                 const shelf = (cleanValues[10] || '').trim();
                 if (!name || !author || !cabinet || !shelf) {
                     skipped++;
+                    continue;
+                }
+                const isDup = existing.some(b =>
+                    (b.name || '').trim().toLowerCase() === name.toLowerCase() &&
+                    (b.author || '').trim().toLowerCase() === author.toLowerCase()
+                );
+                if (isDup) {
+                    skippedDuplicates++;
                     continue;
                 }
                 const book = {
@@ -473,9 +483,9 @@
                     shelf,
                     notes: cleanValues[11] || ''
                 };
-                promises.push(this.addBook(book));
+                promises.push(this.addBook(book).then(added => { existing.push(added); return added; }));
             }
-            return Promise.all(promises).then(books => ({ success: true, count: books.length, books, skipped }));
+            return Promise.all(promises).then(books => ({ success: true, count: books.length, books, skipped, skippedDuplicates }));
         },
 
         clearAllData() {
