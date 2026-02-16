@@ -1,9 +1,9 @@
 /**
  * مكتبة المصباح - Data Management Module
- * Handles localStorage persistence for all data
+ * Handles localStorage persistence; switches to Supabase when config is present.
  */
 
-const DataManager = {
+const LocalStorageDataManager = {
     // Storage keys
     KEYS: {
         BOOKS: 'library_books',
@@ -64,6 +64,10 @@ const DataManager = {
         if (!localStorage.getItem(this.KEYS.DIARY)) {
             localStorage.setItem(this.KEYS.DIARY, JSON.stringify([]));
         }
+    },
+
+    ensureReady() {
+        return Promise.resolve();
     },
 
     // Generate unique ID
@@ -420,11 +424,12 @@ const DataManager = {
         localStorage.removeItem(this.KEYS.USER);
     },
 
-    // Simple login (for demo purposes)
-    login(username, password) {
-        // Demo credentials: admin / admin
-        if (username === 'admin' && password === 'admin') {
-            const user = { username, loggedInAt: new Date().toISOString() };
+    // Demo login when not using Supabase (for local testing only)
+    login(email, password) {
+        const e = (email || '').trim().toLowerCase();
+        const ok = (e === 'admin' || e === 'admin@example.com') && password === 'admin';
+        if (ok) {
+            const user = { email: e, loggedInAt: new Date().toISOString() };
             this.setUser(user);
             return user;
         }
@@ -481,16 +486,22 @@ const DataManager = {
         if (lines.length < 2) return { success: false, message: 'الملف فارغ أو غير صالح' };
 
         const imported = [];
+        let skipped = 0;
         const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
 
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].match(/("([^"]|"")*"|[^,]*)/g) || [];
             const cleanValues = values.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
 
-            if (cleanValues[0]) { // Has book name
+            // Required: book name, author, cabinet (storage), shelf only
+            const name = (cleanValues[0] || '').trim();
+            const author = (cleanValues[1] || '').trim();
+            const cabinet = (cleanValues[9] || '').trim();
+            const shelf = (cleanValues[10] || '').trim();
+            if (name && author && cabinet && shelf) {
                 const book = {
-                    name: cleanValues[0] || '',
-                    author: cleanValues[1] || '',
+                    name,
+                    author,
                     category: cleanValues[2] || 'عام',
                     editor: cleanValues[3] || '',
                     parts: parseInt(cleanValues[4]) || 1,
@@ -498,15 +509,17 @@ const DataManager = {
                     year: cleanValues[6] || '',
                     copies: parseInt(cleanValues[7]) || 1,
                     status: cleanValues[8] || 'متاح',
-                    cabinet: cleanValues[9] || '',
-                    shelf: cleanValues[10] || '',
+                    cabinet,
+                    shelf,
                     notes: cleanValues[11] || ''
                 };
                 imported.push(this.addBook(book));
+            } else {
+                skipped++;
             }
         }
 
-        return { success: true, count: imported.length, books: imported };
+        return { success: true, count: imported.length, books: imported, skipped };
     },
 
     // Clear all data (for testing)
@@ -518,5 +531,11 @@ const DataManager = {
     }
 };
 
-// Initialize on load
-DataManager.init();
+// Use Supabase when configured, otherwise localStorage
+if (typeof window !== 'undefined' && window.SupabaseDataManager && window.supabaseClient) {
+    window.DataManager = window.SupabaseDataManager;
+    window.DataManager.init();
+} else {
+    window.DataManager = LocalStorageDataManager;
+    LocalStorageDataManager.init();
+}

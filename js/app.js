@@ -23,7 +23,8 @@ const App = {
     },
 
     // ========== AUTHENTICATION ==========
-    checkAuth() {
+    async checkAuth() {
+        await DataManager.ensureReady();
         if (DataManager.isLoggedIn()) {
             this.showApp();
         } else {
@@ -39,24 +40,24 @@ const App = {
     showApp() {
         document.getElementById('login-page').classList.remove('active');
         document.querySelector('.app-container').style.display = 'flex';
-        this.navigateTo('dashboard');
+        DataManager.ensureReady().then(() => this.navigateTo('dashboard'));
     },
 
-    handleLogin(e) {
+    async handleLogin(e) {
         e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
 
-        const user = DataManager.login(username, password);
-        if (user) {
+        const result = await Promise.resolve(DataManager.login(email, password));
+        if (result) {
             this.showApp();
         } else {
-            alert('اسم المستخدم أو كلمة المرور غير صحيحة\n\nللتجربة استخدم:\nاسم المستخدم: admin\nكلمة المرور: admin');
+            alert('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
         }
     },
 
-    handleLogout() {
-        DataManager.logout();
+    async handleLogout() {
+        await Promise.resolve(DataManager.logout());
         this.showLogin();
     },
 
@@ -244,8 +245,8 @@ const App = {
     },
 
     confirmDeleteBook(bookId) {
-        this.showConfirmModal('هل أنت متأكد من حذف هذا الكتاب؟', () => {
-            DataManager.deleteBook(bookId);
+        this.showConfirmModal('هل أنت متأكد من حذف هذا الكتاب؟', async () => {
+            await Promise.resolve(DataManager.deleteBook(bookId));
             this.state.selectedBooks.delete(bookId);
             this.renderBooks();
             this.renderDashboard();
@@ -254,8 +255,8 @@ const App = {
 
     confirmBulkDeleteBooks() {
         const count = this.state.selectedBooks.size;
-        this.showConfirmModal(`هل أنت متأكد من حذف ${count} كتاب؟`, () => {
-            DataManager.deleteBooks(Array.from(this.state.selectedBooks));
+        this.showConfirmModal(`هل أنت متأكد من حذف ${count} كتاب؟`, async () => {
+            await Promise.resolve(DataManager.deleteBooks(Array.from(this.state.selectedBooks)));
             this.state.selectedBooks.clear();
             this.renderBooks();
             this.renderDashboard();
@@ -281,6 +282,14 @@ const App = {
                 <div class="form-group">
                     <label>المؤلف <span class="required">*</span></label>
                     <input type="text" name="author" value="${book.author || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label>رقم الخزانة <span class="required">*</span></label>
+                    <input type="text" name="cabinet" value="${book.cabinet || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label>رقم الرف <span class="required">*</span></label>
+                    <input type="text" name="shelf" value="${book.shelf || ''}" required>
                 </div>
                 <div class="form-group">
                     <label>التصنيف</label>
@@ -319,14 +328,6 @@ const App = {
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>رقم الخزانة</label>
-                    <input type="text" name="cabinet" value="${book.cabinet || ''}">
-                </div>
-                <div class="form-group">
-                    <label>رقم الرف</label>
-                    <input type="text" name="shelf" value="${book.shelf || ''}">
-                </div>
-                <div class="form-group">
                     <label>ملاحظات</label>
                     <textarea name="notes" rows="2">${book.notes || ''}</textarea>
                 </div>
@@ -337,11 +338,11 @@ const App = {
             </form>
         `;
 
-        document.getElementById('edit-book-form').onsubmit = (e) => {
+        document.getElementById('edit-book-form').onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
             const updatedData = Object.fromEntries(formData);
-            DataManager.updateBook(bookId, updatedData);
+            await Promise.resolve(DataManager.updateBook(bookId, updatedData));
             this.closeModal();
             this.renderBooks();
             this.renderDashboard();
@@ -365,7 +366,7 @@ const App = {
             publishers.map(p => `<option value="${p}">${p}</option>`).join('');
     },
 
-    handleAddBook(e) {
+    async handleAddBook(e) {
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
@@ -385,7 +386,7 @@ const App = {
             notes: formData.get('notes') || ''
         };
 
-        DataManager.addBook(book);
+        await Promise.resolve(DataManager.addBook(book));
         form.reset();
         alert('تمت إضافة الكتاب بنجاح!');
         this.navigateTo('books');
@@ -424,10 +425,14 @@ const App = {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (event) => {
-            const result = DataManager.importBooksFromCSV(event.target.result);
+        reader.onload = async (event) => {
+            const result = await Promise.resolve(DataManager.importBooksFromCSV(event.target.result));
             if (result.success) {
-                alert(`تم استيراد ${result.count} كتاب بنجاح!`);
+                let msg = `تم استيراد ${result.count} كتاب بنجاح!`;
+                if (result.skipped > 0) {
+                    msg += `\nتم تخطي ${result.skipped} صف لعدم اكتمال الحقول الإلزامية (اسم الكتاب، المؤلف، رقم الخزانة، رقم الرف).`;
+                }
+                alert(msg);
                 this.navigateTo('books');
             } else {
                 alert(result.message);
@@ -516,7 +521,7 @@ const App = {
         document.getElementById('loan-modal-overlay').classList.remove('active');
     },
 
-    handleNewLoan(e) {
+    async handleNewLoan(e) {
         e.preventDefault();
         const bookId = document.getElementById('loan-book').value;
         const memberId = document.getElementById('loan-member').value;
@@ -529,22 +534,22 @@ const App = {
             status: 'معار'
         };
 
-        DataManager.addLoan(loan);
+        await Promise.resolve(DataManager.addLoan(loan));
         this.closeLoanModal();
         this.renderLoans();
         this.renderDashboard();
         alert('تمت الإعارة بنجاح!');
     },
 
-    returnLoan(loanId) {
-        DataManager.returnLoan(loanId);
+    async returnLoan(loanId) {
+        await Promise.resolve(DataManager.returnLoan(loanId));
         this.renderLoans();
         this.renderDashboard();
     },
 
     confirmDeleteLoan(loanId) {
-        this.showConfirmModal('هل أنت متأكد من حذف هذا السجل؟', () => {
-            DataManager.deleteLoan(loanId);
+        this.showConfirmModal('هل أنت متأكد من حذف هذا السجل؟', async () => {
+            await Promise.resolve(DataManager.deleteLoan(loanId));
             this.renderLoans();
         });
     },
@@ -632,7 +637,7 @@ const App = {
         this.renderDiary();
     },
 
-    handleAddDiaryEntry() {
+    async handleAddDiaryEntry() {
         const category = document.getElementById('diary-category').value;
         const content = document.getElementById('new-log-entry').value.trim();
 
@@ -641,7 +646,7 @@ const App = {
             return;
         }
 
-        DataManager.addDiaryEntry({ category, content });
+        await Promise.resolve(DataManager.addDiaryEntry({ category, content }));
         document.getElementById('new-log-entry').value = '';
         this.renderDiary();
     },
@@ -676,13 +681,13 @@ const App = {
             </form>
         `;
 
-        document.getElementById('edit-diary-form').onsubmit = (e) => {
+        document.getElementById('edit-diary-form').onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-            DataManager.updateDiaryEntry(entryId, {
+            await Promise.resolve(DataManager.updateDiaryEntry(entryId, {
                 category: formData.get('category'),
                 content: formData.get('content')
-            });
+            }));
             this.closeModal();
             this.renderDiary();
         };
@@ -691,8 +696,8 @@ const App = {
     },
 
     confirmDeleteDiaryEntry(entryId) {
-        this.showConfirmModal('هل أنت متأكد من حذف هذه اليومية؟', () => {
-            DataManager.deleteDiaryEntry(entryId);
+        this.showConfirmModal('هل أنت متأكد من حذف هذه اليومية؟', async () => {
+            await Promise.resolve(DataManager.deleteDiaryEntry(entryId));
             this.renderDiary();
         });
     },
@@ -737,7 +742,7 @@ const App = {
         this.updateMembersBulkDelete();
     },
 
-    handleAddMember() {
+    async handleAddMember() {
         const name = document.getElementById('new-member-name').value.trim();
         const phone = document.getElementById('new-member-phone').value.trim();
         const address = document.getElementById('new-member-address').value.trim();
@@ -747,7 +752,7 @@ const App = {
             return;
         }
 
-        DataManager.addMember({ name, phone, address });
+        await Promise.resolve(DataManager.addMember({ name, phone, address }));
         document.getElementById('new-member-name').value = '';
         document.getElementById('new-member-phone').value = '';
         document.getElementById('new-member-address').value = '';
@@ -783,14 +788,14 @@ const App = {
             </form>
         `;
 
-        document.getElementById('edit-member-form').onsubmit = (e) => {
+        document.getElementById('edit-member-form').onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
-            DataManager.updateMember(memberId, {
+            await Promise.resolve(DataManager.updateMember(memberId, {
                 name: formData.get('name'),
                 phone: formData.get('phone'),
                 address: formData.get('address')
-            });
+            }));
             this.closeModal();
             this.renderMembers();
         };
@@ -799,8 +804,8 @@ const App = {
     },
 
     confirmDeleteMember(memberId) {
-        this.showConfirmModal('هل أنت متأكد من حذف هذا العضو؟', () => {
-            DataManager.deleteMember(memberId);
+        this.showConfirmModal('هل أنت متأكد من حذف هذا العضو؟', async () => {
+            await Promise.resolve(DataManager.deleteMember(memberId));
             this.state.selectedMembers.delete(memberId);
             this.renderMembers();
             this.renderDashboard();
@@ -837,8 +842,8 @@ const App = {
 
     confirmBulkDeleteMembers() {
         const count = this.state.selectedMembers.size;
-        this.showConfirmModal(`هل أنت متأكد من حذف ${count} عضو؟`, () => {
-            DataManager.deleteMembers(Array.from(this.state.selectedMembers));
+        this.showConfirmModal(`هل أنت متأكد من حذف ${count} عضو؟`, async () => {
+            await Promise.resolve(DataManager.deleteMembers(Array.from(this.state.selectedMembers)));
             this.state.selectedMembers.clear();
             this.renderMembers();
             this.renderDashboard();
@@ -869,7 +874,7 @@ const App = {
         `).join('');
     },
 
-    handleAddCategory() {
+    async handleAddCategory() {
         const input = document.getElementById('new-category');
         const name = input.value.trim();
 
@@ -878,7 +883,8 @@ const App = {
             return;
         }
 
-        if (DataManager.addCategory(name)) {
+        const ok = await Promise.resolve(DataManager.addCategory(name));
+        if (ok) {
             input.value = '';
             this.renderCategories();
             this.renderDashboard();
@@ -904,10 +910,11 @@ const App = {
             </form>
         `;
 
-        document.getElementById('edit-category-form').onsubmit = (e) => {
+        document.getElementById('edit-category-form').onsubmit = async (e) => {
             e.preventDefault();
             const newName = new FormData(e.target).get('name');
-            if (DataManager.updateCategory(oldName, newName)) {
+            const ok = await Promise.resolve(DataManager.updateCategory(oldName, newName));
+            if (ok) {
                 this.closeModal();
                 this.renderCategories();
             } else {
@@ -919,8 +926,8 @@ const App = {
     },
 
     confirmDeleteCategory(category) {
-        this.showConfirmModal(`هل أنت متأكد من حذف التصنيف "${category}"؟`, () => {
-            DataManager.deleteCategory(category);
+        this.showConfirmModal(`هل أنت متأكد من حذف التصنيف "${category}"؟`, async () => {
+            await Promise.resolve(DataManager.deleteCategory(category));
             this.renderCategories();
             this.renderDashboard();
         });
@@ -950,7 +957,7 @@ const App = {
         `).join('');
     },
 
-    handleAddPublisher() {
+    async handleAddPublisher() {
         const input = document.getElementById('new-publisher');
         const name = input.value.trim();
 
@@ -959,7 +966,8 @@ const App = {
             return;
         }
 
-        if (DataManager.addPublisher(name)) {
+        const ok = await Promise.resolve(DataManager.addPublisher(name));
+        if (ok) {
             input.value = '';
             this.renderPublishers();
         } else {
@@ -984,10 +992,11 @@ const App = {
             </form>
         `;
 
-        document.getElementById('edit-publisher-form').onsubmit = (e) => {
+        document.getElementById('edit-publisher-form').onsubmit = async (e) => {
             e.preventDefault();
             const newName = new FormData(e.target).get('name');
-            if (DataManager.updatePublisher(oldName, newName)) {
+            const ok = await Promise.resolve(DataManager.updatePublisher(oldName, newName));
+            if (ok) {
                 this.closeModal();
                 this.renderPublishers();
             } else {
@@ -999,8 +1008,8 @@ const App = {
     },
 
     confirmDeletePublisher(publisher) {
-        this.showConfirmModal(`هل أنت متأكد من حذف دار النشر "${publisher}"؟`, () => {
-            DataManager.deletePublisher(publisher);
+        this.showConfirmModal(`هل أنت متأكد من حذف دار النشر "${publisher}"؟`, async () => {
+            await Promise.resolve(DataManager.deletePublisher(publisher));
             this.renderPublishers();
         });
     },
@@ -1049,9 +1058,12 @@ const App = {
     bindEvents() {
         // Login form
         document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
+        // Keep legacy id for logout if present
 
-        // Logout button
+        // Logout buttons (desktop + mobile)
         document.getElementById('logout-btn').addEventListener('click', () => this.handleLogout());
+        const mobileLogoutBtn = document.getElementById('logout-btn-mobile');
+        if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', () => this.handleLogout());
 
         // Navigation items (desktop)
         document.querySelectorAll('.navbar-menu .nav-item').forEach(item => {
