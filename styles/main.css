@@ -196,12 +196,29 @@ body {
 }
 
 .navbar-description {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
     text-align: center;
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
     color: var(--text-secondary);
     font-size: 0.9rem;
     border-bottom: 1px solid var(--border-light);
+}
+
+.navbar-description p {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+
+/* Spacer so on mobile the text stays centered (same width as hamburger) */
+.navbar-desc-spacer {
+    display: none;
+    width: 2.5rem;
+    flex-shrink: 0;
 }
 
 .navbar-controls {
@@ -291,29 +308,88 @@ body {
     justify-content: center;
 }
 
-/* Mobile Navigation */
+/* Mobile Navigation - card grid (native-style) */
 .mobile-nav-menu {
     display: none;
     background: var(--card-bg);
     border-top: 1px solid var(--border-light);
     padding: var(--spacing-md);
+    max-height: 70vh;
+    overflow-y: auto;
 }
 
 .mobile-nav-menu.active {
     display: block;
 }
 
-.mobile-nav-list {
-    list-style: none;
+.mobile-nav-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-sm);
+    gap: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-.mobile-nav-list .nav-item {
+.mobile-nav-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    padding: var(--spacing-md);
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
     background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: center;
+    min-height: 72px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-card:hover {
+    background: var(--primary-light);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.mobile-nav-card:active {
+    transform: scale(0.98);
+}
+
+.mobile-nav-card.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.mobile-nav-icon {
+    font-size: 1.5rem;
+    opacity: 0.95;
+}
+
+.mobile-nav-card.active .mobile-nav-icon {
+    color: white;
+}
+
+.mobile-nav-label {
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+.mobile-nav-footer {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-light);
+}
+
+.mobile-logout-btn {
+    width: 100%;
+    justify-content: center;
 }
 
 /* === Main Content === */
@@ -1130,7 +1206,22 @@ body {
 
 @media (max-width: 768px) {
     .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .navbar-description {
+        justify-content: space-between;
+    }
+
+    .navbar-desc-spacer {
         display: block;
+    }
+
+    .mobile-menu-btn {
+        flex-shrink: 0;
+        width: 2.5rem;
     }
 
     .navbar-menu {
@@ -1138,7 +1229,7 @@ body {
     }
 
     .navbar-controls {
-        justify-content: flex-end;
+        justify-content: center;
     }
 
     .main-content {
@@ -1147,6 +1238,35 @@ body {
 
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+    }
+
+    .stat-card {
+        padding: 0.75rem;
+        flex-direction: column;
+        gap: 0.4rem;
+        text-align: center;
+        border-radius: 10px;
+    }
+
+    .stat-card .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+
+    .stat-content h3 {
+        font-size: 0.75rem;
+        margin-bottom: 0.15rem;
+    }
+
+    .stat-number {
+        font-size: 1.35rem;
+    }
+
+    #dashboard-page h1 {
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
     }
 
     .table-container {
@@ -1196,25 +1316,43 @@ body {
 
 @media (max-width: 480px) {
     .stats-grid {
-        grid-template-columns: 1fr;
+        gap: 0.5rem;
     }
 
     .stat-card {
-        padding: var(--spacing-md);
+        padding: 0.6rem;
     }
 
-    .stat-icon {
-        width: 50px;
-        height: 50px;
-        font-size: 1.2rem;
+    .stat-card .stat-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .stat-content h3 {
+        font-size: 0.7rem;
     }
 
     .stat-number {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
     }
 
-    .mobile-nav-list {
-        grid-template-columns: 1fr;
+    #dashboard-page h1 {
+        font-size: 1.1rem;
+    }
+
+    .mobile-nav-grid {
+        gap: 0.5rem;
+    }
+
+    .mobile-nav-card {
+        min-height: 64px;
+        padding: 0.75rem 0.35rem;
+        font-size: 0.8rem;
+    }
+
+    .mobile-nav-icon {
+        font-size: 1.35rem;
     }
 
     .form-actions {

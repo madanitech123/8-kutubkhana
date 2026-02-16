@@ -69,6 +69,9 @@ const App = {
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.toggle('active', item.dataset.page === page);
         });
+        document.querySelectorAll('.mobile-nav-card').forEach(card => {
+            card.classList.toggle('active', card.dataset.page === page);
+        });
 
         // Show/hide pages
         document.querySelectorAll('.page').forEach(p => {
@@ -292,7 +295,7 @@ const App = {
                     <input type="text" name="shelf" value="${book.shelf || ''}" required>
                 </div>
                 <div class="form-group">
-                    <label>التصنيف</label>
+                    <label>القسم</label>
                     <select name="category">
                         ${categories.map(c => `<option value="${c}" ${c === book.category ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
@@ -356,7 +359,7 @@ const App = {
         // Populate categories dropdown
         const categorySelect = document.getElementById('book-category');
         const categories = DataManager.getCategories();
-        categorySelect.innerHTML = '<option value="">اختر التصنيف</option>' +
+        categorySelect.innerHTML = '<option value="">اختر القسم</option>' +
             categories.map(c => `<option value="${c}">${c}</option>`).join('');
 
         // Populate publishers dropdown
@@ -879,7 +882,7 @@ const App = {
         const name = input.value.trim();
 
         if (!name) {
-            alert('يرجى إدخال اسم التصنيف');
+            alert('يرجى إدخال اسم القسم');
             return;
         }
 
@@ -889,18 +892,18 @@ const App = {
             this.renderCategories();
             this.renderDashboard();
         } else {
-            alert('هذا التصنيف موجود مسبقاً');
+            alert('هذا القسم موجود مسبقاً');
         }
     },
 
     editCategory(oldName) {
         const modalBody = document.getElementById('modal-body');
-        document.getElementById('modal-title').textContent = 'تعديل التصنيف';
+        document.getElementById('modal-title').textContent = 'تعديل القسم';
 
         modalBody.innerHTML = `
             <form id="edit-category-form">
                 <div class="form-group">
-                    <label>اسم التصنيف <span class="required">*</span></label>
+                    <label>اسم القسم <span class="required">*</span></label>
                     <input type="text" name="name" value="${oldName}" required>
                 </div>
                 <div class="modal-actions">
@@ -918,7 +921,7 @@ const App = {
                 this.closeModal();
                 this.renderCategories();
             } else {
-                alert('فشل في تحديث التصنيف');
+                alert('فشل في تحديث القسم');
             }
         };
 
@@ -926,7 +929,7 @@ const App = {
     },
 
     confirmDeleteCategory(category) {
-        this.showConfirmModal(`هل أنت متأكد من حذف التصنيف "${category}"؟`, async () => {
+        this.showConfirmModal(`هل أنت متأكد من حذف القسم "${category}"؟`, async () => {
             await Promise.resolve(DataManager.deleteCategory(category));
             this.renderCategories();
             this.renderDashboard();
@@ -1074,9 +1077,9 @@ const App = {
         });
 
         // Navigation items (mobile)
-        document.querySelectorAll('.mobile-nav-list .nav-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const page = item.dataset.page;
+        document.querySelectorAll('.mobile-nav-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const page = card.dataset.page;
                 if (page) this.navigateTo(page);
             });
         });

@@ -46,18 +46,17 @@
                 <h1>مكتبة المصباح</h1>
             </div>
 
-            <!-- Row 2: Description -->
+            <!-- Row 2: Description + Hamburger (mobile: hamburger on side, text in middle) -->
             <div class="navbar-description">
-                <p>نظام متكامل لإدارة المكتبة - تنظيم الكتب والإعارات والأعضاء</p>
+                <span class="navbar-desc-spacer" aria-hidden="true"></span>
+                <p>نظام متكامل لإدارة المكتبة</p>
+                <button id="mobile-menu-toggle" class="mobile-menu-btn" type="button" aria-label="القائمة">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
 
             <!-- Row 3: Navigation -->
             <div class="navbar-controls">
-                <!-- Mobile Menu Toggle -->
-                <button id="mobile-menu-toggle" class="mobile-menu-btn">
-                    <i class="fas fa-bars"></i>
-                </button>
-
                 <!-- Desktop Navigation -->
                 <nav class="navbar-menu">
                     <ul class="nav-menu">
@@ -87,7 +86,7 @@
                         </li>
                         <li class="nav-item" data-page="categories">
                             <i class="fas fa-tags"></i>
-                            <span>التصنيفات</span>
+                            <span>الأقسام</span>
                         </li>
                         <li class="nav-item" data-page="publishers">
                             <i class="fas fa-building"></i>
@@ -104,48 +103,48 @@
                 </nav>
             </div>
 
-            <!-- Mobile Navigation Dropdown -->
+            <!-- Mobile Navigation: card grid (native-style) -->
             <nav class="mobile-nav-menu">
-                <ul class="mobile-nav-list">
-                    <li class="nav-item active" data-page="dashboard">
-                        <i class="fas fa-tachometer-alt"></i>
-                        <span>لوحة المعلومات</span>
-                    </li>
-                    <li class="nav-item" data-page="books">
-                        <i class="fas fa-list"></i>
-                        <span>قائمة الكتب</span>
-                    </li>
-                    <li class="nav-item" data-page="add-book">
-                        <i class="fas fa-plus-circle"></i>
-                        <span>إضافة كتاب</span>
-                    </li>
-                    <li class="nav-item" data-page="loans">
-                        <i class="fas fa-history"></i>
-                        <span>سجل الإعارات</span>
-                    </li>
-                    <li class="nav-item" data-page="diary">
-                        <i class="fas fa-clipboard-list"></i>
-                        <span>يوميات المكتبة</span>
-                    </li>
-                    <li class="nav-item" data-page="members">
-                        <i class="fas fa-users"></i>
-                        <span>الأعضاء</span>
-                    </li>
-                    <li class="nav-item" data-page="categories">
-                        <i class="fas fa-tags"></i>
-                        <span>التصنيفات</span>
-                    </li>
-                    <li class="nav-item" data-page="publishers">
-                        <i class="fas fa-building"></i>
-                        <span>دور النشر</span>
-                    </li>
-                    <li class="nav-logout mobile-logout">
-                        <button type="button" id="logout-btn-mobile" class="btn-logout" title="تسجيل الخروج">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>تسجيل الخروج</span>
-                        </button>
-                    </li>
-                </ul>
+                <div class="mobile-nav-grid">
+                    <button type="button" class="mobile-nav-card active" data-page="dashboard">
+                        <span class="mobile-nav-icon"><i class="fas fa-tachometer-alt"></i></span>
+                        <span class="mobile-nav-label">لوحة المعلومات</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="books">
+                        <span class="mobile-nav-icon"><i class="fas fa-list"></i></span>
+                        <span class="mobile-nav-label">قائمة الكتب</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="add-book">
+                        <span class="mobile-nav-icon"><i class="fas fa-plus-circle"></i></span>
+                        <span class="mobile-nav-label">إضافة كتاب</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="loans">
+                        <span class="mobile-nav-icon"><i class="fas fa-history"></i></span>
+                        <span class="mobile-nav-label">سجل الإعارات</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="diary">
+                        <span class="mobile-nav-icon"><i class="fas fa-clipboard-list"></i></span>
+                        <span class="mobile-nav-label">يوميات المكتبة</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="members">
+                        <span class="mobile-nav-icon"><i class="fas fa-users"></i></span>
+                        <span class="mobile-nav-label">الأعضاء</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="categories">
+                        <span class="mobile-nav-icon"><i class="fas fa-tags"></i></span>
+                        <span class="mobile-nav-label">الأقسام</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="publishers">
+                        <span class="mobile-nav-icon"><i class="fas fa-building"></i></span>
+                        <span class="mobile-nav-label">دور النشر</span>
+                    </button>
+                </div>
+                <div class="mobile-nav-footer">
+                    <button type="button" id="logout-btn-mobile" class="btn-logout mobile-logout-btn" title="تسجيل الخروج">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>تسجيل الخروج</span>
+                    </button>
+                </div>
             </nav>
         </header>
 
@@ -178,7 +177,7 @@
                             <i class="fas fa-tags"></i>
                         </div>
                         <div class="stat-content">
-                            <h3>التصنيفات</h3>
+                            <h3>الأقسام</h3>
                             <p class="stat-number" id="total-categories">0</p>
                         </div>
                     </div>
@@ -241,7 +240,7 @@
                                     <input type="text" class="filter-input" data-column="author" placeholder="بحث...">
                                 </th>
                                 <th>
-                                    <span>التصنيف</span>
+                                    <span>القسم</span>
                                     <input type="text" class="filter-input" data-column="category" placeholder="بحث...">
                                 </th>
                                 <th>
@@ -331,9 +330,9 @@
                         <div class="form-section">
                             <h3><i class="fas fa-info-circle"></i> معلومات إضافية (اختياري)</h3>
                             <div class="form-group">
-                                <label for="book-category">التصنيف</label>
+                                <label for="book-category">القسم</label>
                                 <select id="book-category" name="category">
-                                    <option value="">اختر التصنيف</option>
+                                    <option value="">اختر القسم</option>
                                 </select>
                             </div>
                             <div class="form-row">
@@ -486,10 +485,10 @@
 
             <!-- Categories Page -->
             <div id="categories-page" class="page">
-                <h1>إدارة التصنيفات</h1>
+                <h1>إدارة الأقسام</h1>
                 <div class="manage-container">
                     <div class="add-item">
-                        <input type="text" id="new-category" placeholder="اسم التصنيف الجديد">
+                        <input type="text" id="new-category" placeholder="اسم القسم الجديد">
                         <button class="btn btn-primary" id="add-category-btn">
                             <i class="fas fa-plus"></i> إضافة تصنيف
                         </button>
