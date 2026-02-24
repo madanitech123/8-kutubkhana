@@ -16,41 +16,8 @@ const LocalStorageDataManager = {
         SETTINGS: 'library_settings'
     },
 
-    // Default categories
-    DEFAULT_CATEGORIES: [
-        'تفسير',
-        'حديث',
-        'فقه',
-        'عقيدة',
-        'سيرة',
-        'تاريخ',
-        'لغة عربية',
-        'أدب',
-        'تزكية',
-        'عام'
-    ],
-
-    // Default publishers
-    DEFAULT_PUBLISHERS: [
-        'دار السلام',
-        'دار الكتب العلمية',
-        'مؤسسة الرسالة',
-        'دار ابن كثير',
-        'دار المعرفة',
-        'دار التراث العربي',
-        'أخرى'
-    ],
-
-    // Initialize data
+    // Initialize data (no hardcoded defaults; categories/publishers come from Supabase or are empty)
     init() {
-        // Initialize categories if not exists
-        if (!this.getCategories().length) {
-            this.setCategories(this.DEFAULT_CATEGORIES);
-        }
-        // Initialize publishers if not exists
-        if (!this.getPublishers().length) {
-            this.setPublishers(this.DEFAULT_PUBLISHERS);
-        }
         // Initialize empty arrays if not exists
         if (!localStorage.getItem(this.KEYS.BOOKS)) {
             localStorage.setItem(this.KEYS.BOOKS, JSON.stringify([]));
@@ -449,7 +416,8 @@ const LocalStorageDataManager = {
         const books = this.getBooks();
         if (!books.length) return null;
 
-        const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الخزانة', 'الرف', 'ملاحظات'];
+        // Same order as book list table: name, author, category, editor, parts, publisher, year, copies, status, cabinet, shelf, notes
+        const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الصندوق', 'الطاق', 'ملاحظات'];
         const rows = books.map(book => [
             book.name || '',
             book.author || '',
@@ -473,7 +441,7 @@ const LocalStorageDataManager = {
     },
 
     getCSVTemplate() {
-        const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الخزانة', 'الرف', 'ملاحظات'];
+        const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الصندوق', 'الطاق', 'ملاحظات'];
         const exampleRow = ['مثال: صحيح البخاري', 'الإمام البخاري', 'حديث', 'ابن حجر العسقلاني', '9', 'دار السلام', '1422', '1', 'متاح', 'A1', '1', 'نسخة محققة'];
         
         return [headers, exampleRow]
@@ -481,70 +449,186 @@ const LocalStorageDataManager = {
             .join('\n');
     },
 
-    importBooksFromCSV(csvData) {
-        const lines = csvData.split('\n').filter(line => line.trim());
-        if (lines.length < 2) return { success: false, message: 'الملف فارغ أو غير صالح' };
+    /**
+     * Parse CSV text into rows of cells. Handles quoted fields (commas and newlines inside "...").
+     * Returns [ [...cells], [...cells], ... ].
+     */
+    _parseCSVToRows(text) {
+        let t = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1);
+        const rows = [];
+        let row = [];
+        let cell = '';
+        let inQuotes = false;
+        for (let i = 0; i < t.length; i++) {
+            const c = t[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (t[i + 1] === '"') { cell += '"'; i++; }
+                    else inQuotes = false;
+                } else {
+                    cell += c;
+                }
+            } else {
+                if (c === '"') inQuotes = true;
+                else if (c === ',') { row.push(cell.trim()); cell = ''; }
+                else if (c === '\n') { row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
+                else cell += c;
+            }
+        }
+        if (cell !== '' || row.length > 0) { row.push(cell.trim()); rows.push(row); }
+        return rows;
+    },
+
+    importBooksFromCSV(csvData, onProgress) {
+        const rows = this._parseCSVToRows(csvData);
+        if (rows.length < 2) return { success: false, message: 'الملف فارغ أو غير صالح' };
+
+        const total = rows.length - 1;
+        if (typeof onProgress === 'function') onProgress(0, total);
+
+        const headerRow = rows[0].map(h => (h || '').trim());
+        const numCols = Math.max(headerRow.length, 12);
+        const col = (arr, name) => {
+            const i = headerRow.findIndex(h => (h || '').trim() === name);
+            return i >= 0 ? (arr[i] || '').trim() : '';
+        };
+        const yearLooksValid = (v) => {
+            const s = (v || '').trim();
+            if (!s) return true;
+            const onlyDigitsOrEmpty = (s.replace(/\s/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9\d]/g, '').length === 0);
+            return onlyDigitsOrEmpty && s.length <= 8;
+        };
 
         const imported = [];
+        const updated = [];
         let skipped = 0;
-        let skippedDuplicates = 0;
-        const existingBooks = this.getBooks();
 
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].match(/("([^"]|"")*"|[^,]*)/g) || [];
-            const cleanValues = values.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
-
-            const name = (cleanValues[0] || '').trim();
-            const author = (cleanValues[1] || '').trim();
-            const cabinet = (cleanValues[9] || '').trim();
-            const shelf = (cleanValues[10] || '').trim();
-            if (!name || !author || !cabinet || !shelf) {
+        for (let i = 1; i < rows.length; i++) {
+            const raw = rows[i];
+            const cleanValues = raw.length > numCols ? raw.slice(0, numCols) : [...raw, ...Array(numCols - raw.length).fill('')];
+            const name = col(cleanValues, 'اسم الكتاب');
+            const author = col(cleanValues, 'المؤلف');
+            const category = col(cleanValues, 'القسم');
+            const cabinet = col(cleanValues, 'الصندوق');
+            if (!name || !author || !category || !cabinet) {
                 skipped++;
                 continue;
             }
-            const isDup = existingBooks.some(b =>
-                (b.name || '').trim().toLowerCase() === name.toLowerCase() &&
-                (b.author || '').trim().toLowerCase() === author.toLowerCase()
-            );
-            if (isDup) {
-                skippedDuplicates++;
-                continue;
+            if (category && !this.getCategories().includes(category)) {
+                this.addCategory(category);
             }
+            const yearRaw = (col(cleanValues, 'السنة') || '').trim();
+            const year = yearLooksValid(yearRaw) ? yearRaw : '';
             const book = {
                 name,
                 author,
-                category: cleanValues[2] || 'عام',
-                editor: cleanValues[3] || '',
-                parts: parseInt(cleanValues[4]) || 1,
-                publisher: cleanValues[5] || '',
-                year: cleanValues[6] || '',
-                copies: parseInt(cleanValues[7]) || 1,
-                status: cleanValues[8] || 'متاح',
+                editor: col(cleanValues, 'المحقق') || '',
+                category: category || 'عام',
                 cabinet,
-                shelf,
-                notes: cleanValues[11] || ''
+                shelf: col(cleanValues, 'الطاق') || '',
+                parts: parseInt(col(cleanValues, 'الأجزاء')) || 1,
+                publisher: col(cleanValues, 'دار النشر') || '',
+                year,
+                copies: parseInt(col(cleanValues, 'النسخ')) || 1,
+                status: col(cleanValues, 'الحالة') || 'متاح',
+                notes: col(cleanValues, 'ملاحظات') || ''
             };
-            imported.push(this.addBook(book));
-            existingBooks.push(book);
+            const existing = this.getBooks().find(b =>
+                (b.name || '').trim().toLowerCase() === name.toLowerCase() &&
+                (b.author || '').trim().toLowerCase() === author.toLowerCase()
+            );
+            if (existing) {
+                const updatedBook = this.updateBook(existing.id, book);
+                if (updatedBook) updated.push(updatedBook);
+            } else {
+                imported.push(this.addBook(book));
+            }
+            if (typeof onProgress === 'function' && i % 25 === 0) onProgress(i, total);
         }
+        if (typeof onProgress === 'function') onProgress(total, total);
 
-        return { success: true, count: imported.length, books: imported, skipped, skippedDuplicates };
+        return { success: true, count: imported.length, books: imported, updatedCount: updated.length, updated, skipped };
     },
 
-    // Clear all data (for testing)
     clearAllData() {
         Object.values(this.KEYS).forEach(key => {
             localStorage.removeItem(key);
         });
-        this.init();
+        this.setBooks([]);
+        this.setMembers([]);
+        this.setLoans([]);
+        this.setDiary([]);
+        this.setCategories([]);
+        this.setPublishers([]);
     }
 };
 
-// Use Supabase when configured, otherwise localStorage
+/**
+ * Stub when Supabase is not configured: no localStorage, no hardcoded data.
+ * App shows login; login rejects with a message to configure Supabase.
+ */
+const SupabaseOnlyStub = {
+    init() {},
+    ensureReady() { return Promise.resolve(); },
+    getBooks() { return []; },
+    setBooks() {},
+    getMembers() { return []; },
+    setMembers() {},
+    getLoans() { return []; },
+    getDiary() { return []; },
+    getDiaryGroupedByDate() { return {}; },
+    getCategories() { return []; },
+    setCategories() {},
+    getPublishers() { return []; },
+    setPublishers() {},
+    getBookById() { return null; },
+    getMemberById() { return null; },
+    getActiveLoans() { return []; },
+    getStats() {
+        return { totalBooks: 0, totalAuthors: 0, totalCategories: 0, availableBooks: 0, issuedBooks: 0, totalMembers: 0, totalLoans: 0, activeLoans: 0 };
+    },
+    addBook() { return Promise.resolve(null); },
+    updateBook() { return Promise.resolve(null); },
+    deleteBook() { return Promise.resolve(false); },
+    deleteBooks() { return Promise.resolve(0); },
+    addMember() { return Promise.resolve(null); },
+    updateMember() { return Promise.resolve(null); },
+    deleteMember() { return Promise.resolve(false); },
+    deleteMembers() { return Promise.resolve(0); },
+    addLoan() { return Promise.resolve(null); },
+    returnLoan() { return Promise.resolve(null); },
+    deleteLoan() { return Promise.resolve(); },
+    addDiaryEntry() { return Promise.resolve(null); },
+    updateDiaryEntry() { return Promise.resolve(null); },
+    deleteDiaryEntry() { return Promise.resolve(false); },
+    addCategory() { return Promise.resolve(false); },
+    updateCategory() { return Promise.resolve(false); },
+    deleteCategory() { return Promise.resolve(); },
+    addPublisher() { return Promise.resolve(false); },
+    updatePublisher() { return Promise.resolve(false); },
+    deletePublisher() { return Promise.resolve(); },
+    login() {
+        return Promise.reject(new Error('يرجى إعداد Supabase: انسخ js/config.example.js إلى js/config.js وأدخل مفاتيح المشروع.'));
+    },
+    logout() { return Promise.resolve(); },
+    isLoggedIn() { return false; },
+    exportBooksToCSV() { return null; },
+    getCSVTemplate() {
+        const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الصندوق', 'الطاق', 'ملاحظات'];
+        return headers.map(cell => `"${cell}"`).join(',') + '\n';
+    },
+    importBooksFromCSV() { return Promise.resolve({ success: false, message: 'يرجى إعداد Supabase أولاً.', count: 0, books: [], updatedCount: 0, updated: [], skipped: 0 }); },
+    clearAllData() { return Promise.resolve(); }
+};
+
+// Use Supabase when configured; otherwise stub (no localStorage, no hardcoded data)
 if (typeof window !== 'undefined' && window.SupabaseDataManager && window.supabaseClient) {
     window.DataManager = window.SupabaseDataManager;
+    window.SUPABASE_REQUIRED = false;
     window.DataManager.init();
 } else {
-    window.DataManager = LocalStorageDataManager;
-    LocalStorageDataManager.init();
+    window.DataManager = SupabaseOnlyStub;
+    window.SUPABASE_REQUIRED = true; // Show setup message on login page
+    SupabaseOnlyStub.init();
 }

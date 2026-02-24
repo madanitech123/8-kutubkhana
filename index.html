@@ -16,15 +16,16 @@
     <div id="login-page" class="login-page active">
         <div class="login-container">
             <h1><i class="fas fa-book-open"></i> مكتبة المصباح</h1>
+            <p id="supabase-required-msg" class="supabase-required-msg" style="display: none; margin: 0 0 1rem; padding: 0.75rem; background: #fff3cd; color: #856404; border-radius: 8px; font-size: 0.9rem;">يرجى إعداد Supabase: انسخ <code>js/config.example.js</code> إلى <code>js/config.js</code> وأدخل مفاتيح المشروع.</p>
             <div class="login-form-wrapper">
                 <form id="login-form">
                     <div class="form-group">
                         <label for="login-email">البريد الإلكتروني</label>
-                        <input type="email" id="login-email" name="email" placeholder="أدخل بريدك" required>
+                        <input type="email" id="login-email" name="email" placeholder="أدخل بريدك" autocomplete="email" required>
                     </div>
                     <div class="form-group">
                         <label for="login-password">كلمة المرور</label>
-                        <input type="password" id="login-password" name="password" placeholder="أدخل كلمة المرور" required>
+                        <input type="password" id="login-password" name="password" placeholder="أدخل كلمة المرور" autocomplete="current-password" required>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">
@@ -245,6 +246,7 @@
                                 <th>
                                     <input type="checkbox" id="select-all-books">
                                 </th>
+                                <th class="col-num">م</th>
                                 <th>
                                     <span>اسم الكتاب</span>
                                     <input type="text" class="filter-input" data-column="name" placeholder="بحث...">
@@ -286,11 +288,11 @@
                                     </select>
                                 </th>
                                 <th>
-                                    <span>الخزانة</span>
+                                    <span>الصندوق</span>
                                     <input type="text" class="filter-input" data-column="cabinet" placeholder="بحث...">
                                 </th>
                                 <th>
-                                    <span>الرف</span>
+                                    <span>الطاق</span>
                                     <input type="text" class="filter-input" data-column="shelf" placeholder="بحث...">
                                 </th>
                                 <th>إجراءات</th>
@@ -308,6 +310,9 @@
                         <button class="btn btn-secondary" id="next-page">
                             التالي <i class="fas fa-chevron-left"></i>
                         </button>
+                        <button class="btn btn-secondary" id="last-page" title="آخر صفحة">
+                            آخر صفحة <i class="fas fa-step-backward"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -317,7 +322,7 @@
                 <h1>إضافة كتاب جديد</h1>
                 <div class="form-container">
                     <form id="add-book-form">
-                        <!-- Required: book name, author, storage number, shelf number only -->
+                        <!-- Required: book name, author, category, الصندوق. الطاق optional -->
                         <div class="form-section">
                             <h3><i class="fas fa-asterisk"></i> الحقول الإلزامية فقط</h3>
                             <div class="form-group">
@@ -328,14 +333,20 @@
                                 <label for="book-author">المؤلف <span class="required">*</span></label>
                                 <input type="text" id="book-author" name="author" required>
                             </div>
+                            <div class="form-group">
+                                <label for="book-category">القسم <span class="required">*</span></label>
+                                <select id="book-category" name="category" required>
+                                    <option value="">اختر القسم</option>
+                                </select>
+                            </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="book-cabinet">رقم الخزانة <span class="required">*</span></label>
+                                    <label for="book-cabinet">الصندوق <span class="required">*</span></label>
                                     <input type="text" id="book-cabinet" name="cabinet" required>
                                 </div>
                                 <div class="form-group">
-                                    <label for="book-shelf">رقم الرف <span class="required">*</span></label>
-                                    <input type="text" id="book-shelf" name="shelf" required>
+                                    <label for="book-shelf">الطاق</label>
+                                    <input type="text" id="book-shelf" name="shelf">
                                 </div>
                             </div>
                         </div>
@@ -343,12 +354,6 @@
                         <!-- Optional Fields -->
                         <div class="form-section">
                             <h3><i class="fas fa-info-circle"></i> معلومات إضافية (اختياري)</h3>
-                            <div class="form-group">
-                                <label for="book-category">القسم</label>
-                                <select id="book-category" name="category">
-                                    <option value="">اختر القسم</option>
-                                </select>
-                            </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="book-editor">المحقق/المحرر</label>
@@ -545,6 +550,13 @@
                         <i class="fas fa-download"></i> تصدير Excel
                     </button>
                 </div>
+                <div class="settings-section danger-section">
+                    <h2><i class="fas fa-trash-alt"></i> حذف كل البيانات</h2>
+                    <p class="settings-desc">حذف جميع الكتب والأعضاء والإعارات واليوميات. لا يمكن التراجع.</p>
+                    <button type="button" class="btn btn-danger" id="delete-all-data-btn">
+                        <i class="fas fa-exclamation-triangle"></i> حذف كل البيانات
+                    </button>
+                </div>
             </div>
         </main>
     </div>
@@ -606,6 +618,19 @@
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- CSV import progress overlay -->
+    <div id="csv-import-overlay" class="import-overlay" aria-hidden="true">
+        <div class="import-overlay-content">
+            <div class="import-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+            <p class="import-message">جاري استيراد الكتب...</p>
+            <p class="import-progress-text" id="csv-import-progress-text">0 من 0</p>
+            <div class="import-progress-bar-wrap">
+                <div class="import-progress-bar" id="csv-import-progress-bar"></div>
+            </div>
+            <p class="import-hint">يرجى الانتظار، قد يستغرق ذلك بعض الوقت.</p>
         </div>
     </div>
 

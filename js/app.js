@@ -8,7 +8,7 @@ const App = {
     state: {
         currentPage: 'dashboard',
         booksPage: 1,
-        booksPerPage: 10,
+        booksPerPage: 100,
         selectedBooks: new Set(),
         selectedMembers: new Set(),
         filters: {},
@@ -35,6 +35,8 @@ const App = {
     showLogin() {
         document.getElementById('login-page').classList.add('active');
         document.querySelector('.app-container').style.display = 'none';
+        const msgEl = document.getElementById('supabase-required-msg');
+        if (msgEl) msgEl.style.display = window.SUPABASE_REQUIRED ? 'block' : 'none';
     },
 
     showApp() {
@@ -48,11 +50,15 @@ const App = {
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
 
-        const result = await Promise.resolve(DataManager.login(email, password));
-        if (result) {
-            this.showApp();
-        } else {
-            alert('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+        try {
+            const result = await Promise.resolve(DataManager.login(email, password));
+            if (result) {
+                this.showApp();
+            } else {
+                alert('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+            }
+        } catch (err) {
+            alert(err && err.message ? err.message : 'حدث خطأ. تأكد من إعداد Supabase في js/config.js.');
         }
     },
 
@@ -148,19 +154,22 @@ const App = {
         if (pageBooks.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="13" class="empty-state">
+                    <td colspan="14" class="empty-state">
                         <i class="fas fa-book-open"></i>
                         <p>لا توجد كتب للعرض</p>
                     </td>
                 </tr>
             `;
         } else {
-            tbody.innerHTML = pageBooks.map((book, index) => `
+            tbody.innerHTML = pageBooks.map((book, index) => {
+                const rowNum = start + index + 1;
+                return `
                 <tr data-id="${book.id}">
                     <td>
                         <input type="checkbox" class="book-checkbox" value="${book.id}" 
                             ${this.state.selectedBooks.has(book.id) ? 'checked' : ''}>
                     </td>
+                    <td class="col-num">${rowNum}</td>
                     <td class="book-name-highlight">${book.name || '-'}</td>
                     <td>${book.author || '-'}</td>
                     <td>${book.category || '-'}</td>
@@ -182,18 +191,21 @@ const App = {
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-sm btn-delete" onclick="App.confirmDeleteBook('${book.id}')" title="حذف">
-                                <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Update pagination
         document.getElementById('page-info').textContent = `صفحة ${this.state.booksPage} من ${totalPages}`;
         document.getElementById('prev-page').disabled = this.state.booksPage === 1;
         document.getElementById('next-page').disabled = this.state.booksPage === totalPages;
+        const lastPageBtn = document.getElementById('last-page');
+        if (lastPageBtn) lastPageBtn.disabled = this.state.booksPage === totalPages;
 
         // Update bulk delete button
         this.updateBulkDeleteButton();
@@ -303,16 +315,17 @@ const App = {
                     <input type="text" name="author" value="${book.author || ''}" required>
                 </div>
                 <div class="form-group">
-                    <label>رقم الخزانة <span class="required">*</span></label>
+                    <label>الصندوق <span class="required">*</span></label>
                     <input type="text" name="cabinet" value="${book.cabinet || ''}" required>
                 </div>
                 <div class="form-group">
-                    <label>رقم الرف <span class="required">*</span></label>
-                    <input type="text" name="shelf" value="${book.shelf || ''}" required>
+                    <label>الطاق</label>
+                    <input type="text" name="shelf" value="${book.shelf || ''}">
                 </div>
                 <div class="form-group">
-                    <label>القسم</label>
-                    <select name="category">
+                    <label>القسم <span class="required">*</span></label>
+                    <select name="category" required>
+                        <option value="">اختر القسم</option>
                         ${categories.map(c => `<option value="${c}" ${c === book.category ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
                 </div>
@@ -451,25 +464,45 @@ const App = {
         const file = e.target.files[0];
         if (!file) return;
 
+        const overlay = document.getElementById('csv-import-overlay');
+        const progressText = document.getElementById('csv-import-progress-text');
+        const progressBar = document.getElementById('csv-import-progress-bar');
+        const onProgress = (done, total) => {
+            if (progressText) progressText.textContent = done + ' من ' + total;
+            if (progressBar) progressBar.style.width = (total ? Math.min(100, (100 * done) / total) : 0) + '%';
+        };
+
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const result = await Promise.resolve(DataManager.importBooksFromCSV(event.target.result));
-            if (result.success) {
-                let msg = `تم استيراد ${result.count} كتاب بنجاح!`;
-                if (result.skipped > 0) {
-                    msg += `\nتم تخطي ${result.skipped} صف لعدم اكتمال الحقول الإلزامية.`;
+            overlay.classList.add('active');
+            overlay.setAttribute('aria-hidden', 'false');
+            if (progressText) progressText.textContent = '0 من 0';
+            if (progressBar) progressBar.style.width = '0%';
+            try {
+                const result = await Promise.resolve(DataManager.importBooksFromCSV(event.target.result, onProgress));
+                if (result.success) {
+                    let msg = '';
+                    if (result.count > 0) msg += `تم استيراد ${result.count} كتاب جديد.`;
+                    if (result.updatedCount > 0) msg += (msg ? '\n' : '') + `تم تحديث ${result.updatedCount} كتاب (كانت موجودة مسبقاً بنفس الاسم والمؤلف، وتم تحديث بياناتها).`;
+                    if (!msg) msg = 'تمت معالجة الملف.';
+                    if (result.skipped > 0) msg += `\nتم تخطي ${result.skipped} صف لعدم اكتمال الحقول الإلزامية.`;
+                    if (result.failCount > 0) msg += `\nفشل استيراد ${result.failCount} صف.`;
+                    const totalBooks = DataManager.getBooks().length;
+                    msg += `\nالإجمالي في القائمة الآن: ${totalBooks} كتاباً.`;
+                    alert(msg);
+                    this.navigateTo('books');
+                } else {
+                    alert(result.message);
                 }
-                if (result.skippedDuplicates > 0) {
-                    msg += `\nتم تخطي ${result.skippedDuplicates} كتاب مكرر (نفس الاسم والمؤلف).`;
-                }
-                alert(msg);
-                this.navigateTo('books');
-            } else {
-                alert(result.message);
+            } catch (err) {
+                alert('حدث خطأ أثناء الاستيراد: ' + (err?.message || err));
+            } finally {
+                overlay.classList.remove('active');
+                overlay.setAttribute('aria-hidden', 'true');
             }
         };
-        reader.readAsText(file);
-        e.target.value = ''; // Reset file input
+        reader.readAsText(file, 'UTF-8');
+        e.target.value = '';
     },
 
     // ========== LOANS ==========
@@ -601,6 +634,7 @@ const App = {
             return;
         }
 
+        let diaryIndex = 0;
         container.innerHTML = dates.map(date => {
             const entries = grouped[date];
             const isExpanded = this.state.expandedLogEntries.has(date);
@@ -624,8 +658,11 @@ const App = {
                         </button>
                     </div>
                     <div class="log-entry-content">
-                        ${entries.map(entry => `
+                        ${entries.map(entry => {
+                            diaryIndex++;
+                            return `
                             <div class="log-item">
+                                <span class="log-item-num">${diaryIndex}</span>
                                 <div class="log-item-content">
                                     <span class="log-item-category ${this.getCategoryClass(entry.category)}">
                                         ${entry.category}
@@ -641,7 +678,8 @@ const App = {
                                     </button>
                                 </div>
                             </div>
-                        `).join('')}
+                        `;
+                        }).join('')}
                     </div>
                 </div>
             `;
@@ -747,9 +785,10 @@ const App = {
             document.getElementById('members-bulk-actions').style.display = 'none';
         } else {
             document.getElementById('members-bulk-actions').style.display = 'flex';
-            container.innerHTML = members.map(member => `
+            container.innerHTML = members.map((member, index) => `
                 <div class="item-card" data-id="${member.id}">
                     <div class="item-info">
+                        <span class="item-number">${index + 1}</span>
                         <input type="checkbox" class="item-checkbox member-checkbox" value="${member.id}"
                             ${this.state.selectedMembers.has(member.id) ? 'checked' : ''}>
                         <div class="item-details">
@@ -903,9 +942,10 @@ const App = {
         const categories = DataManager.getCategories();
         const container = document.getElementById('categories-list');
 
-        container.innerHTML = categories.map(category => `
+        container.innerHTML = categories.map((category, index) => `
             <div class="item-card">
                 <div class="item-info">
+                    <span class="item-number">${index + 1}</span>
                     <div class="item-details">
                         <h4>${category}</h4>
                     </div>
@@ -986,9 +1026,10 @@ const App = {
         const publishers = DataManager.getPublishers();
         const container = document.getElementById('publishers-list');
 
-        container.innerHTML = publishers.map(publisher => `
+        container.innerHTML = publishers.map((publisher, index) => `
             <div class="item-card">
                 <div class="item-info">
+                    <span class="item-number">${index + 1}</span>
                     <div class="item-details">
                         <h4>${publisher}</h4>
                     </div>
@@ -1079,7 +1120,7 @@ const App = {
         const wb = XLSX.utils.book_new();
         if (books) {
             const bookList = DataManager.getBooks();
-            const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الخزانة', 'الرف', 'ملاحظات'];
+            const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الصندوق', 'الطاق', 'ملاحظات'];
             const rows = bookList.map(b => [b.name || '', b.author || '', b.category || '', b.editor || '', b.parts || '', b.publisher || '', b.year || '', b.copies || '', b.status || '', b.cabinet || '', b.shelf || '', b.notes || '']);
             const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
             XLSX.utils.book_append_sheet(wb, ws, 'الكتب');
@@ -1225,6 +1266,15 @@ const App = {
             }
         });
 
+        document.getElementById('last-page').addEventListener('click', () => {
+            const books = this.getFilteredBooks();
+            const totalPages = Math.ceil(books.length / this.state.booksPerPage) || 1;
+            if (this.state.booksPage !== totalPages) {
+                this.state.booksPage = totalPages;
+                this.renderBooks();
+            }
+        });
+
         // Filter inputs
         document.querySelectorAll('.filter-input, .filter-select').forEach(input => {
             input.addEventListener('input', (e) => {
@@ -1263,6 +1313,28 @@ const App = {
 
         // Settings - backup export
         document.getElementById('export-backup-btn').addEventListener('click', () => this.exportBackupExcel());
+
+        // Settings - delete all data
+        document.getElementById('delete-all-data-btn').addEventListener('click', () => {
+            this.showConfirmModal(
+                'هل أنت متأكد من حذف كل البيانات؟ سيتم حذف جميع الكتب والأعضاء والإعارات واليوميات ولا يمكن التراجع.',
+                () => {
+                    Promise.resolve(DataManager.clearAllData())
+                        .then(() => {
+                            this.navigateTo('dashboard');
+                            this.renderDashboard();
+                            this.renderBooks();
+                            this.renderMembers();
+                            this.renderLoans();
+                            this.renderDiary();
+                            this.renderCategories();
+                            this.renderPublishers();
+                            alert('تم حذف كل البيانات.');
+                        })
+                        .catch(err => alert('حدث خطأ: ' + (err?.message || err)));
+                }
+            );
+        });
 
         // Global search: icon opens popover, submit runs search and closes popover
         const searchInput = document.getElementById('global-search-input');

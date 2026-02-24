@@ -77,29 +77,43 @@
     let readyPromise = null;
     let authUser = null;
 
+    const PAGE_SIZE = 1000;
+
+    async function fetchAllFromTable(table, orderBy, ascending = false) {
+        const all = [];
+        let from = 0;
+        let hasMore = true;
+        while (hasMore) {
+            const to = from + PAGE_SIZE - 1;
+            const { data, error } = await sb.from(table).select('*').order(orderBy, { ascending }).range(from, to);
+            if (error) throw error;
+            const rows = data || [];
+            all.push(...rows);
+            hasMore = rows.length === PAGE_SIZE;
+            from += PAGE_SIZE;
+        }
+        return all;
+    }
+
     async function fetchAll() {
-        const [booksRes, membersRes, loansRes, diaryRes, catRes, pubRes] = await Promise.all([
-            sb.from('books').select('*').order('created_at', { ascending: false }),
-            sb.from('members').select('*').order('created_at', { ascending: false }),
-            sb.from('loans').select('*').order('created_at', { ascending: false }),
-            sb.from('diary_entries').select('*').order('created_at', { ascending: false }),
+        const [booksRows, membersRows, loansRows, diaryRows, catRes, pubRes] = await Promise.all([
+            fetchAllFromTable('books', 'created_at', false),
+            fetchAllFromTable('members', 'created_at', false),
+            fetchAllFromTable('loans', 'created_at', false),
+            fetchAllFromTable('diary_entries', 'created_at', false),
             sb.from('categories').select('name').order('name'),
             sb.from('publishers').select('name').order('name')
         ]);
-        if (booksRes.data) cache.books = (booksRes.data || []).map(mapBook);
-        if (membersRes.data) cache.members = (membersRes.data || []).map(mapMember);
-        if (loansRes.data) cache.loans = (loansRes.data || []).map(mapLoan);
-        if (diaryRes.data) cache.diary = (diaryRes.data || []).map(mapDiary);
+        cache.books = booksRows.map(mapBook);
+        cache.members = membersRows.map(mapMember);
+        cache.loans = loansRows.map(mapLoan);
+        cache.diary = diaryRows.map(mapDiary);
         if (catRes.data) cache.categories = (catRes.data || []).map(r => r.name);
         if (pubRes.data) cache.publishers = (pubRes.data || []).map(r => r.name);
-        if (cache.categories.length === 0) cache.categories = ['تفسير', 'حديث', 'فقه', 'عقيدة', 'سيرة', 'تاريخ', 'لغة عربية', 'أدب', 'تزكية', 'عام'];
-        if (cache.publishers.length === 0) cache.publishers = ['دار السلام', 'دار الكتب العلمية', 'مؤسسة الرسالة', 'دار ابن كثير', 'دار المعرفة', 'دار التراث العربي', 'أخرى'];
     }
 
     window.SupabaseDataManager = {
         KEYS: {},
-        DEFAULT_CATEGORIES: ['تفسير', 'حديث', 'فقه', 'عقيدة', 'سيرة', 'تاريخ', 'لغة عربية', 'أدب', 'تزكية', 'عام'],
-        DEFAULT_PUBLISHERS: ['دار السلام', 'دار الكتب العلمية', 'مؤسسة الرسالة', 'دار ابن كثير', 'دار المعرفة', 'دار التراث العربي', 'أخرى'],
 
         init() {
             if (!readyPromise) {
@@ -337,10 +351,24 @@
         setCategories(categories) { cache.categories = categories.slice(); },
 
         addCategory(category) {
-            if (cache.categories.includes(category)) return Promise.resolve(false);
+            if (!category || cache.categories.includes(category)) return Promise.resolve(false);
             return sb.from('categories').insert({ name: category }).then(({ error }) => {
-                if (!error) cache.categories.push(category);
-                return !error;
+                if (!error) {
+                    cache.categories.push(category);
+                    return true;
+                }
+                const conflict = error.code === '23505' || error.status === 409 || (error.message && error.message.includes('duplicate'));
+                if (conflict) {
+                    if (!cache.categories.includes(category)) cache.categories.push(category);
+                    return true;
+                }
+                return false;
+            }).catch(err => {
+                if (err?.code === '23505' || err?.status === 409) {
+                    if (!cache.categories.includes(category)) cache.categories.push(category);
+                    return true;
+                }
+                throw err;
             });
         },
 
@@ -428,7 +456,7 @@
         exportBooksToCSV() {
             const books = cache.books;
             if (!books.length) return null;
-            const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الخزانة', 'الرف', 'ملاحظات'];
+            const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الصندوق', 'الطاق', 'ملاحظات'];
             const rows = books.map(book => [
                 book.name || '', book.author || '', book.category || '', book.editor || '', book.parts || '',
                 book.publisher || '', book.year || '', book.copies || '', book.status || '', book.cabinet || '',
@@ -438,62 +466,186 @@
         },
 
         getCSVTemplate() {
-            const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الخزانة', 'الرف', 'ملاحظات'];
+            const headers = ['اسم الكتاب', 'المؤلف', 'القسم', 'المحقق', 'الأجزاء', 'دار النشر', 'السنة', 'النسخ', 'الحالة', 'الصندوق', 'الطاق', 'ملاحظات'];
             const exampleRow = ['مثال: صحيح البخاري', 'الإمام البخاري', 'حديث', 'ابن حجر العسقلاني', '9', 'دار السلام', '1422', '1', 'متاح', 'A1', '1', 'نسخة محققة'];
             return [headers, exampleRow].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
         },
 
-        importBooksFromCSV(csvData) {
-            const lines = csvData.split('\n').filter(line => line.trim());
-            if (lines.length < 2) return Promise.resolve({ success: false, message: 'الملف فارغ أو غير صالح' });
-            const promises = [];
-            let skipped = 0;
-            let skippedDuplicates = 0;
+        importBooksFromCSV(csvData, onProgress) {
+            const parseCSVToRows = (text) => {
+                let t = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                if (t.charCodeAt(0) === 0xFEFF) t = t.slice(1);
+                const rows = [];
+                let row = [];
+                let cell = '';
+                let inQuotes = false;
+                for (let i = 0; i < t.length; i++) {
+                    const c = t[i];
+                    if (inQuotes) {
+                        if (c === '"') {
+                            if (t[i + 1] === '"') { cell += '"'; i++; }
+                            else inQuotes = false;
+                        } else cell += c;
+                    } else {
+                        if (c === '"') inQuotes = true;
+                        else if (c === ',') { row.push(cell.trim()); cell = ''; }
+                        else if (c === '\n') { row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
+                        else cell += c;
+                    }
+                }
+                if (cell !== '' || row.length > 0) { row.push(cell.trim()); rows.push(row); }
+                return rows;
+            };
+            const yearLooksValid = (v) => {
+                const s = (v || '').trim();
+                if (!s) return true;
+                const digits = s.replace(/[\s\u0660-\u0669\u06F0-\u06F9]/g, '').replace(/\d/g, '');
+                const onlyDigitsOrEmpty = (s.replace(/\s/g, '').replace(/[\u0660-\u0669\u06F0-\u06F9\d]/g, '').length === 0);
+                return onlyDigitsOrEmpty && s.length <= 8;
+            };
+            const rows = parseCSVToRows(csvData);
+            if (rows.length < 2) return Promise.resolve({ success: false, message: 'الملف فارغ أو غير صالح' });
+            const headerRow = rows[0].map(h => (h || '').trim());
+            const numCols = Math.max(headerRow.length, 12);
+            const col = (arr, name) => {
+                const i = headerRow.findIndex(h => (h || '').trim() === name);
+                return i >= 0 ? (arr[i] || '').trim() : '';
+            };
+            const tasks = [];
             const existing = cache.books.slice();
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].match(/("([^"]|"")*"|[^,]*)/g) || [];
-                const cleanValues = values.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
-                const name = (cleanValues[0] || '').trim();
-                const author = (cleanValues[1] || '').trim();
-                const cabinet = (cleanValues[9] || '').trim();
-                const shelf = (cleanValues[10] || '').trim();
-                if (!name || !author || !cabinet || !shelf) {
+            let skipped = 0;
+            const uniqueCategories = new Set();
+            for (let i = 1; i < rows.length; i++) {
+                const raw = rows[i];
+                const cleanValues = raw.length > numCols ? raw.slice(0, numCols) : [...raw, ...Array(numCols - raw.length).fill('')];
+                const name = col(cleanValues, 'اسم الكتاب');
+                const author = col(cleanValues, 'المؤلف');
+                const category = col(cleanValues, 'القسم');
+                const cabinet = col(cleanValues, 'الصندوق');
+                if (!name || !author || !category || !cabinet) {
                     skipped++;
                     continue;
                 }
-                const isDup = existing.some(b =>
-                    (b.name || '').trim().toLowerCase() === name.toLowerCase() &&
-                    (b.author || '').trim().toLowerCase() === author.toLowerCase()
-                );
-                if (isDup) {
-                    skippedDuplicates++;
-                    continue;
-                }
+                uniqueCategories.add(category);
+                const yearRaw = (col(cleanValues, 'السنة') || '').trim();
+                const year = yearLooksValid(yearRaw) ? yearRaw : '';
                 const book = {
                     name,
                     author,
-                    category: cleanValues[2] || 'عام',
-                    editor: cleanValues[3] || '',
-                    parts: parseInt(cleanValues[4]) || 1,
-                    publisher: cleanValues[5] || '',
-                    year: cleanValues[6] || '',
-                    copies: parseInt(cleanValues[7]) || 1,
-                    status: cleanValues[8] || 'متاح',
+                    editor: col(cleanValues, 'المحقق') || '',
+                    category: category || 'عام',
                     cabinet,
-                    shelf,
-                    notes: cleanValues[11] || ''
+                    shelf: col(cleanValues, 'الطاق') || '',
+                    parts: parseInt(col(cleanValues, 'الأجزاء')) || 1,
+                    publisher: col(cleanValues, 'دار النشر') || '',
+                    year,
+                    copies: parseInt(col(cleanValues, 'النسخ')) || 1,
+                    status: col(cleanValues, 'الحالة') || 'متاح',
+                    notes: col(cleanValues, 'ملاحظات') || ''
                 };
-                promises.push(this.addBook(book).then(added => { existing.push(added); return added; }));
+                const existingBook = existing.find(b =>
+                    (b.name || '').trim().toLowerCase() === name.toLowerCase() &&
+                    (b.author || '').trim().toLowerCase() === author.toLowerCase()
+                );
+                if (existingBook) {
+                    tasks.push({ type: 'update', id: existingBook.id, book });
+                } else {
+                    tasks.push({ type: 'add', book });
+                }
             }
-            return Promise.all(promises).then(books => ({ success: true, count: books.length, books, skipped, skippedDuplicates }));
+            const total = tasks.length;
+            if (typeof onProgress === 'function') onProgress(0, total);
+            const addCategoriesParallel = (names) => {
+                const toAdd = Array.from(names).filter(n => n && !cache.categories.includes(n));
+                if (!toAdd.length) return Promise.resolve();
+                return Promise.allSettled(toAdd.map(n => this.addCategory(n)));
+            };
+            const bookToRow = (book) => ({
+                name: book.name || '',
+                author: book.author || '',
+                category: book.category || '',
+                editor: book.editor || '',
+                parts: book.parts != null ? book.parts : 1,
+                publisher: book.publisher || '',
+                year: book.year || '',
+                copies: book.copies != null ? book.copies : 1,
+                status: book.status || 'متاح',
+                cabinet: book.cabinet || '',
+                shelf: book.shelf || '',
+                notes: book.notes || ''
+            });
+            const BULK_INSERT_SIZE = 40;
+            const UPDATE_BATCH = 15;
+            let actualAddCount = 0;
+            let actualUpdateCount = 0;
+            let failCount = 0;
+            let doneCount = 0;
+            const reportProgress = () => {
+                if (typeof onProgress === 'function') onProgress(doneCount, total);
+            };
+            return addCategoriesParallel(uniqueCategories)
+                .then(() => {
+                    const addTasks = tasks.filter(t => t.type === 'add');
+                    const updateTasks = tasks.filter(t => t.type === 'update');
+                    let chain = Promise.resolve();
+                    for (let i = 0; i < addTasks.length; i += BULK_INSERT_SIZE) {
+                        const batch = addTasks.slice(i, i + BULK_INSERT_SIZE);
+                        const rows = batch.map(t => bookToRow(t.book));
+                        chain = chain.then(() =>
+                            sb.from('books').insert(rows).select('id, created_at, updated_at')
+                                .then(({ data, error }) => {
+                                    if (error) return Promise.reject(error);
+                                    const inserted = (data || []).map((d, idx) => mapBook({ ...rows[idx], id: d.id, created_at: d.created_at, updated_at: d.updated_at }));
+                                    inserted.reverse();
+                                    inserted.forEach(b => cache.books.unshift(b));
+                                    existing.push(...inserted);
+                                    actualAddCount += inserted.length;
+                                    doneCount += batch.length;
+                                    reportProgress();
+                                })
+                        );
+                    }
+                    for (let i = 0; i < updateTasks.length; i += UPDATE_BATCH) {
+                        const batch = updateTasks.slice(i, i + UPDATE_BATCH);
+                        chain = chain.then(() =>
+                            Promise.allSettled(batch.map(t => this.updateBook(t.id, t.book)))
+                                .then(results => {
+                                    results.forEach(r => { if (r.status === 'fulfilled') actualUpdateCount++; else failCount++; });
+                                    doneCount += batch.length;
+                                    reportProgress();
+                                })
+                        );
+                    }
+                    return chain.then(() => ({
+                        success: true,
+                        count: actualAddCount,
+                        books: [],
+                        updatedCount: actualUpdateCount,
+                        skipped,
+                        failCount
+                    }));
+                })
+                .catch(err => ({ success: false, message: err?.message || 'خطأ في الاستيراد' }));
         },
 
         clearAllData() {
-            cache.books = [];
-            cache.members = [];
-            cache.loans = [];
-            cache.diary = [];
-            return Promise.resolve();
+            const emptyUuid = '00000000-0000-0000-0000-000000000000';
+            return sb.from('loans').delete().neq('id', emptyUuid)
+                .then(() => sb.from('books').delete().neq('id', emptyUuid))
+                .then(() => sb.from('members').delete().neq('id', emptyUuid))
+                .then(() => sb.from('diary_entries').delete().neq('id', emptyUuid))
+                .then(() => sb.from('categories').delete().gte('id', 0))
+                .then(() => sb.from('publishers').delete().gte('id', 0))
+                .then(() => {
+                    cache.books = [];
+                    cache.members = [];
+                    cache.loans = [];
+                    cache.diary = [];
+                    cache.categories = [];
+                    cache.publishers = [];
+                    return Promise.resolve();
+                })
+                .catch(err => Promise.reject(err));
         }
     };
 })();
