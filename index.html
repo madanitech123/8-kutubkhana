@@ -95,9 +95,17 @@
                             <i class="fas fa-tags"></i>
                             <span>الأقسام</span>
                         </li>
+                        <li class="nav-item" data-page="authors">
+                            <i class="fas fa-user-edit"></i>
+                            <span>المؤلفين</span>
+                        </li>
                         <li class="nav-item" data-page="publishers">
                             <i class="fas fa-building"></i>
                             <span>دور النشر</span>
+                        </li>
+                        <li class="nav-item" data-page="reports">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>التقارير</span>
                         </li>
                         <li class="nav-item" data-page="settings">
                             <i class="fas fa-cog"></i>
@@ -145,9 +153,17 @@
                         <span class="mobile-nav-icon"><i class="fas fa-tags"></i></span>
                         <span class="mobile-nav-label">الأقسام</span>
                     </button>
+                    <button type="button" class="mobile-nav-card" data-page="authors">
+                        <span class="mobile-nav-icon"><i class="fas fa-user-edit"></i></span>
+                        <span class="mobile-nav-label">المؤلفين</span>
+                    </button>
                     <button type="button" class="mobile-nav-card" data-page="publishers">
                         <span class="mobile-nav-icon"><i class="fas fa-building"></i></span>
                         <span class="mobile-nav-label">دور النشر</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="reports">
+                        <span class="mobile-nav-icon"><i class="fas fa-chart-bar"></i></span>
+                        <span class="mobile-nav-label">التقارير</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="settings">
                         <span class="mobile-nav-icon"><i class="fas fa-cog"></i></span>
@@ -194,6 +210,15 @@
                         <div class="stat-content">
                             <h3>الأقسام</h3>
                             <p class="stat-number" id="total-categories">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon publishers">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>دور النشر</h3>
+                            <p class="stat-number" id="total-publishers">0</p>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -518,6 +543,28 @@
                 </div>
             </div>
 
+            <!-- Authors / Writers Page -->
+            <div id="authors-page" class="page">
+                <h1>قائمة المؤلفين</h1>
+                <p class="page-desc">المؤلفون الظاهرون أدناه مستخرجون من قائمة الكتب.</p>
+                <div class="items-list" id="authors-list">
+                    <!-- Authors will be populated here -->
+                </div>
+                <div class="pagination" id="authors-pagination">
+                    <button class="btn btn-secondary" id="authors-prev-page" type="button">
+                        <i class="fas fa-chevron-right"></i> السابق
+                    </button>
+                    <span id="authors-page-info">صفحة 1 من 1</span>
+                    <button class="btn btn-secondary" id="authors-next-page" type="button">
+                        التالي <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-secondary" id="authors-last-page" type="button" title="آخر صفحة">
+                        آخر صفحة <i class="fas fa-step-backward"></i>
+                    </button>
+                </div>
+                <p class="reports-footer" id="authors-footer"></p>
+            </div>
+
             <!-- Publishers Page -->
             <div id="publishers-page" class="page">
                 <h1>إدارة دور النشر</h1>
@@ -527,11 +574,61 @@
                         <button class="btn btn-primary" id="add-publisher-btn">
                             <i class="fas fa-plus"></i> إضافة دار نشر
                         </button>
+                        <button type="button" class="btn btn-secondary" id="sync-publishers-from-books-btn" title="إضافة دور النشر الموجودة في الكتب إلى القائمة">
+                            <i class="fas fa-sync-alt"></i> استيراد من قائمة الكتب
+                        </button>
                     </div>
                     <div class="items-list" id="publishers-list">
                         <!-- Publishers will be populated here -->
                     </div>
                 </div>
+            </div>
+
+            <!-- Reports Page -->
+            <div id="reports-page" class="page">
+                <h1><i class="fas fa-chart-bar"></i> تقرير قائمة الكتب</h1>
+                <p class="reports-desc">عرض الكتب التي تنقصها معلومات (إلزامية أو اختيارية) مع إمكانية التصفية والتصدير.</p>
+
+                <div class="reports-summary" id="reports-summary">
+                    <!-- Summary cards filled by JS -->
+                </div>
+
+                <div class="reports-toolbar">
+                    <button type="button" class="btn btn-primary" id="export-report-btn">
+                        <i class="fas fa-download"></i> تصدير التقرير CSV
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="reports-table">
+                        <thead>
+                            <tr>
+                                <th class="col-num">م</th>
+                                <th>اسم الكتاب</th>
+                                <th>المؤلف</th>
+                                <th>القسم</th>
+                                <th>الحقول الناقصة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-tbody">
+                            <!-- Rows filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="reports-pagination">
+                    <button class="btn btn-secondary" id="reports-prev-page" type="button">
+                        <i class="fas fa-chevron-right"></i> السابق
+                    </button>
+                    <span id="reports-page-info">صفحة 1 من 1</span>
+                    <button class="btn btn-secondary" id="reports-next-page" type="button">
+                        التالي <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-secondary" id="reports-last-page" type="button" title="آخر صفحة">
+                        آخر صفحة <i class="fas fa-step-backward"></i>
+                    </button>
+                </div>
+                <p class="reports-footer" id="reports-footer"></p>
             </div>
 
             <!-- Settings Page -->

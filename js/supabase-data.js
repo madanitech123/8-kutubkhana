@@ -393,10 +393,27 @@
         setPublishers(publishers) { cache.publishers = publishers.slice(); },
 
         addPublisher(publisher) {
-            if (cache.publishers.includes(publisher)) return Promise.resolve(false);
+            if (!publisher || cache.publishers.includes(publisher)) return Promise.resolve(false);
             return sb.from('publishers').insert({ name: publisher }).then(({ error }) => {
-                if (!error) cache.publishers.push(publisher);
-                return !error;
+                if (!error) {
+                    cache.publishers.push(publisher);
+                    cache.publishers.sort();
+                    return true;
+                }
+                const conflict = error.code === '23505' || error.status === 409 || (error.message && error.message.includes('duplicate'));
+                if (conflict) {
+                    if (!cache.publishers.includes(publisher)) cache.publishers.push(publisher);
+                    cache.publishers.sort();
+                    return true;
+                }
+                return false;
+            }).catch(err => {
+                if (err?.code === '23505' || err?.status === 409) {
+                    if (!cache.publishers.includes(publisher)) cache.publishers.push(publisher);
+                    cache.publishers.sort();
+                    return true;
+                }
+                return false;
             });
         },
 
@@ -417,11 +434,28 @@
             });
         },
 
+        /** Populate publishers list from existing books (for books that have publisher set but not in publishers table). */
+        syncPublishersFromBooks() {
+            const existing = cache.publishers.slice();
+            const fromBooks = new Set();
+            cache.books.forEach(b => {
+                const p = (b.publisher || '').trim();
+                if (p) fromBooks.add(p);
+            });
+            const toAdd = Array.from(fromBooks).filter(p => !existing.includes(p));
+            if (!toAdd.length) return Promise.resolve({ added: 0 });
+            return Promise.allSettled(toAdd.map(n => this.addPublisher(n))).then(results => {
+                const added = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
+                return { added };
+            });
+        },
+
         getStats() {
             const books = cache.books;
             const members = cache.members;
             const loans = cache.loans;
             const categories = cache.categories;
+            const publishers = cache.publishers;
             const authors = new Set(books.map(b => b.author).filter(Boolean));
             const availableBooks = books.filter(b => b.status !== 'معار').length;
             const issuedBooks = books.filter(b => b.status === 'معار').length;
@@ -429,6 +463,7 @@
                 totalBooks: books.length,
                 totalAuthors: authors.size,
                 totalCategories: categories.length,
+                totalPublishers: publishers.length,
                 availableBooks,
                 issuedBooks,
                 totalMembers: members.length,
@@ -515,6 +550,7 @@
             const existing = cache.books.slice();
             let skipped = 0;
             const uniqueCategories = new Set();
+            const uniquePublishers = new Set();
             for (let i = 1; i < rows.length; i++) {
                 const raw = rows[i];
                 const cleanValues = raw.length > numCols ? raw.slice(0, numCols) : [...raw, ...Array(numCols - raw.length).fill('')];
@@ -527,6 +563,8 @@
                     continue;
                 }
                 uniqueCategories.add(category);
+                const publisherVal = (col(cleanValues, 'دار النشر') || '').trim();
+                if (publisherVal) uniquePublishers.add(publisherVal);
                 const yearRaw = (col(cleanValues, 'السنة') || '').trim();
                 const year = yearLooksValid(yearRaw) ? yearRaw : '';
                 const book = {
@@ -537,7 +575,7 @@
                     cabinet,
                     shelf: col(cleanValues, 'الطاق') || '',
                     parts: parseInt(col(cleanValues, 'الأجزاء')) || 1,
-                    publisher: col(cleanValues, 'دار النشر') || '',
+                    publisher: publisherVal,
                     year,
                     copies: parseInt(col(cleanValues, 'النسخ')) || 1,
                     status: col(cleanValues, 'الحالة') || 'متاح',
@@ -559,6 +597,11 @@
                 const toAdd = Array.from(names).filter(n => n && !cache.categories.includes(n));
                 if (!toAdd.length) return Promise.resolve();
                 return Promise.allSettled(toAdd.map(n => this.addCategory(n)));
+            };
+            const addPublishersParallel = (names) => {
+                const toAdd = Array.from(names).filter(n => n && !cache.publishers.includes(n));
+                if (!toAdd.length) return Promise.resolve();
+                return Promise.allSettled(toAdd.map(n => this.addPublisher(n)));
             };
             const bookToRow = (book) => ({
                 name: book.name || '',
@@ -584,6 +627,7 @@
                 if (typeof onProgress === 'function') onProgress(doneCount, total);
             };
             return addCategoriesParallel(uniqueCategories)
+                .then(() => addPublishersParallel(uniquePublishers))
                 .then(() => {
                     const addTasks = tasks.filter(t => t.type === 'add');
                     const updateTasks = tasks.filter(t => t.type === 'update');

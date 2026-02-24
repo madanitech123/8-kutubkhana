@@ -357,18 +357,20 @@ const LocalStorageDataManager = {
         const members = this.getMembers();
         const loans = this.getLoans();
         const categories = this.getCategories();
-        
+        const publishers = this.getPublishers();
+
         // Get unique authors
         const authors = new Set(books.map(b => b.author).filter(Boolean));
-        
+
         // Count available and issued books
         const availableBooks = books.filter(b => b.status !== 'معار').length;
         const issuedBooks = books.filter(b => b.status === 'معار').length;
-        
+
         return {
             totalBooks: books.length,
             totalAuthors: authors.size,
             totalCategories: categories.length,
+            totalPublishers: publishers.length,
             availableBooks,
             issuedBooks,
             totalMembers: members.length,
@@ -586,7 +588,7 @@ const SupabaseOnlyStub = {
     getMemberById() { return null; },
     getActiveLoans() { return []; },
     getStats() {
-        return { totalBooks: 0, totalAuthors: 0, totalCategories: 0, availableBooks: 0, issuedBooks: 0, totalMembers: 0, totalLoans: 0, activeLoans: 0 };
+        return { totalBooks: 0, totalAuthors: 0, totalCategories: 0, totalPublishers: 0, availableBooks: 0, issuedBooks: 0, totalMembers: 0, totalLoans: 0, activeLoans: 0 };
     },
     addBook() { return Promise.resolve(null); },
     updateBook() { return Promise.resolve(null); },
@@ -619,7 +621,8 @@ const SupabaseOnlyStub = {
         return headers.map(cell => `"${cell}"`).join(',') + '\n';
     },
     importBooksFromCSV() { return Promise.resolve({ success: false, message: 'يرجى إعداد Supabase أولاً.', count: 0, books: [], updatedCount: 0, updated: [], skipped: 0 }); },
-    clearAllData() { return Promise.resolve(); }
+    clearAllData() { return Promise.resolve(); },
+    syncPublishersFromBooks() { return Promise.resolve({ added: 0 }); }
 };
 
 // Use Supabase when configured; otherwise stub (no localStorage, no hardcoded data)

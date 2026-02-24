@@ -12,7 +12,28 @@ const App = {
         selectedBooks: new Set(),
         selectedMembers: new Set(),
         filters: {},
-        expandedLogEntries: new Set()
+        expandedLogEntries: new Set(),
+        reportsFilter: 'all',
+        reportsPage: 1,
+        reportsPerPage: 100,
+        authorsPage: 1,
+        authorsPerPage: 100
+    },
+
+    // Field labels for reports (key -> Arabic label)
+    REPORT_FIELDS: {
+        name: 'اسم الكتاب',
+        author: 'المؤلف',
+        category: 'القسم',
+        cabinet: 'الصندوق',
+        editor: 'المحقق',
+        publisher: 'دار النشر',
+        year: 'السنة',
+        shelf: 'الطاق',
+        notes: 'ملاحظات',
+        parts: 'الأجزاء',
+        copies: 'النسخ',
+        status: 'الحالة'
     },
 
     // Initialize the application
@@ -98,6 +119,10 @@ const App = {
                 break;
             case 'books':
                 document.getElementById('global-search-input').value = this.state.globalSearch || '';
+                Object.keys(this.state.filters || {}).forEach(column => {
+                    const el = document.querySelector(`.filter-input[data-column="${column}"], .filter-select[data-column="${column}"]`);
+                    if (el) el.value = this.state.filters[column] || '';
+                });
                 this.renderBooks();
                 break;
             case 'add-book':
@@ -115,8 +140,14 @@ const App = {
             case 'categories':
                 this.renderCategories();
                 break;
+            case 'authors':
+                this.renderAuthors();
+                break;
             case 'publishers':
                 this.renderPublishers();
+                break;
+            case 'reports':
+                this.renderReports();
                 break;
             case 'settings':
                 break;
@@ -130,6 +161,7 @@ const App = {
         document.getElementById('total-books').textContent = stats.totalBooks;
         document.getElementById('total-authors').textContent = stats.totalAuthors;
         document.getElementById('total-categories').textContent = stats.totalCategories;
+        document.getElementById('total-publishers').textContent = stats.totalPublishers != null ? stats.totalPublishers : 0;
         document.getElementById('books-available').textContent = stats.availableBooks;
         document.getElementById('books-issued').textContent = stats.issuedBooks;
         document.getElementById('total-members').textContent = stats.totalMembers;
@@ -378,6 +410,7 @@ const App = {
             this.closeModal();
             this.renderBooks();
             this.renderDashboard();
+            this.renderReports();
         };
 
         this.openModal();
@@ -1021,6 +1054,74 @@ const App = {
         });
     },
 
+    // ========== AUTHORS (WRITERS) ==========
+    renderAuthors() {
+        const books = DataManager.getBooks();
+        const byAuthor = {};
+        books.forEach(b => {
+            const name = (b.author || '').trim();
+            if (name) byAuthor[name] = (byAuthor[name] || 0) + 1;
+        });
+        const allAuthors = Object.keys(byAuthor).sort((a, b) => a.localeCompare(b, 'ar'));
+        const totalPages = Math.max(1, Math.ceil(allAuthors.length / this.state.authorsPerPage));
+        if (this.state.authorsPage > totalPages) this.state.authorsPage = totalPages;
+        const start = (this.state.authorsPage - 1) * this.state.authorsPerPage;
+        const end = start + this.state.authorsPerPage;
+        const pageAuthors = allAuthors.slice(start, end);
+
+        const container = document.getElementById('authors-list');
+        const paginationEl = document.getElementById('authors-pagination');
+        const pageInfoEl = document.getElementById('authors-page-info');
+        const footerEl = document.getElementById('authors-footer');
+        const prevBtn = document.getElementById('authors-prev-page');
+        const nextBtn = document.getElementById('authors-next-page');
+        const lastBtn = document.getElementById('authors-last-page');
+        if (!container) return;
+
+        if (allAuthors.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-user-edit"></i>
+                    <p>لا يوجد مؤلفون مسجلون. ستظهر أسماء المؤلفين هنا عند إضافة كتب.</p>
+                </div>
+            `;
+            if (paginationEl) paginationEl.style.display = 'none';
+            if (footerEl) footerEl.textContent = '';
+            return;
+        }
+        if (paginationEl) paginationEl.style.display = 'flex';
+        container.innerHTML = pageAuthors.map((author, i) => {
+            const count = byAuthor[author];
+            const rowNum = start + i + 1;
+            const dataAuthor = (author || '').replace(/"/g, '&quot;');
+            return `
+            <div class="item-card item-card-clickable" data-author="${dataAuthor}" role="button" tabindex="0" title="عرض كتب هذا المؤلف">
+                <div class="item-info">
+                    <span class="item-number">${rowNum}</span>
+                    <div class="item-details">
+                        <h4>${author.replace(/</g, '&lt;')}</h4>
+                        <p class="item-meta">${count} كتاب</p>
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <span class="btn btn-sm btn-secondary"><i class="fas fa-book-open"></i> عرض الكتب</span>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        if (pageInfoEl) pageInfoEl.textContent = `صفحة ${this.state.authorsPage} من ${totalPages}`;
+        if (footerEl) footerEl.textContent = `عرض ${start + 1} - ${start + pageAuthors.length} من ${allAuthors.length} مؤلف.`;
+        if (prevBtn) prevBtn.disabled = this.state.authorsPage === 1;
+        if (nextBtn) nextBtn.disabled = this.state.authorsPage === totalPages;
+        if (lastBtn) lastBtn.disabled = this.state.authorsPage === totalPages;
+    },
+
+    goToBooksByAuthor(authorName) {
+        this.state.filters = { author: authorName };
+        this.navigateTo('books');
+    },
+
     // ========== PUBLISHERS ==========
     renderPublishers() {
         const publishers = DataManager.getPublishers();
@@ -1101,6 +1202,138 @@ const App = {
             await Promise.resolve(DataManager.deletePublisher(publisher));
             this.renderPublishers();
         });
+    },
+
+    async syncPublishersFromBooks() {
+        const result = await Promise.resolve(DataManager.syncPublishersFromBooks());
+        this.renderPublishers();
+        if (result && result.added > 0) {
+            alert(`تمت إضافة ${result.added} دار نشر من قائمة الكتب إلى القائمة.`);
+        } else {
+            alert('جميع دور النشر الموجودة في الكتب مسجلة مسبقاً في القائمة.');
+        }
+    },
+
+    // ========== REPORTS ==========
+    isBookFieldEmpty(book, key) {
+        const v = book[key];
+        if (v === undefined || v === null) return true;
+        if (typeof v === 'number') return key === 'parts' || key === 'copies' ? (v < 1 || isNaN(v)) : false;
+        return String(v).trim() === '';
+    },
+
+    getBooksWithMissingInfo() {
+        const books = DataManager.getBooks();
+        const fields = Object.keys(this.REPORT_FIELDS);
+        const rows = [];
+        books.forEach(book => {
+            const missing = fields.filter(f => this.isBookFieldEmpty(book, f));
+            if (missing.length > 0) rows.push({ book, missing });
+        });
+        return rows;
+    },
+
+    getReportSummary() {
+        const books = DataManager.getBooks();
+        const fields = Object.keys(this.REPORT_FIELDS);
+        const missingPerField = {};
+        fields.forEach(f => { missingPerField[f] = 0; });
+        let complete = 0;
+        books.forEach(book => {
+            const missing = fields.filter(f => this.isBookFieldEmpty(book, f));
+            if (missing.length === 0) complete++;
+            missing.forEach(f => { missingPerField[f]++; });
+        });
+        return { total: books.length, complete, missingPerField };
+    },
+
+    renderReports() {
+        const summary = this.getReportSummary();
+        const currentFilter = this.state.reportsFilter || 'all';
+        const summaryEl = document.getElementById('reports-summary');
+        if (summaryEl) {
+            const missingCount = summary.total - summary.complete;
+            const parts = [
+                `<div class="report-stat-card"><span class="report-stat-value">${summary.total}</span><span class="report-stat-label">إجمالي الكتب</span></div>`,
+                `<div class="report-stat-card"><span class="report-stat-value">${summary.complete}</span><span class="report-stat-label">كتب مكتملة البيانات</span></div>`,
+                `<div class="report-stat-card highlight clickable${currentFilter === 'all' ? ' active' : ''}" data-filter="all" role="button" tabindex="0" title="اضغط للتصفية"><span class="report-stat-value">${missingCount}</span><span class="report-stat-label">كتب ناقصة معلومات</span></div>`
+            ];
+            Object.keys(this.REPORT_FIELDS).forEach(key => {
+                const n = summary.missingPerField[key] || 0;
+                if (n > 0) {
+                    const active = currentFilter === key ? ' active' : '';
+                    parts.push(`<div class="report-stat-card small clickable${active}" data-filter="${key}" role="button" tabindex="0" title="اضغط للتصفية"><span class="report-stat-value">${n}</span><span class="report-stat-label">ناقص ${this.REPORT_FIELDS[key]}</span></div>`);
+                }
+            });
+            summaryEl.innerHTML = parts.join('');
+        }
+
+        let rows = this.getBooksWithMissingInfo();
+        const filter = this.state.reportsFilter || 'all';
+        if (filter !== 'all') rows = rows.filter(r => r.missing.includes(filter));
+
+        const totalPages = Math.max(1, Math.ceil(rows.length / this.state.reportsPerPage));
+        if (this.state.reportsPage > totalPages) this.state.reportsPage = totalPages;
+        const start = (this.state.reportsPage - 1) * this.state.reportsPerPage;
+        const end = start + this.state.reportsPerPage;
+        const pageRows = rows.slice(start, end);
+
+        const tbody = document.getElementById('reports-tbody');
+        const footerEl = document.getElementById('reports-footer');
+        const pageInfoEl = document.getElementById('reports-page-info');
+        const prevBtn = document.getElementById('reports-prev-page');
+        const nextBtn = document.getElementById('reports-next-page');
+        const lastBtn = document.getElementById('reports-last-page');
+        if (!tbody) return;
+
+        if (rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><i class="fas fa-check-circle"></i><p>${filter === 'all' ? 'لا توجد كتب ناقصة معلومات.' : 'لا توجد كتب ناقصة الحقل المحدد.'}</p></td></tr>`;
+            if (footerEl) footerEl.textContent = '';
+            if (pageInfoEl) pageInfoEl.textContent = 'صفحة 1 من 1';
+            if (prevBtn) prevBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = true;
+            if (lastBtn) lastBtn.disabled = true;
+        } else {
+            tbody.innerHTML = pageRows.map((r, i) => {
+                const rowNum = start + i + 1;
+                const missingLabels = r.missing.map(m => this.REPORT_FIELDS[m]).join('، ');
+                return `<tr>
+                    <td class="col-num">${rowNum}</td>
+                    <td class="book-name-highlight">${(r.book.name || '-').replace(/</g, '&lt;')}</td>
+                    <td>${(r.book.author || '-').replace(/</g, '&lt;')}</td>
+                    <td>${(r.book.category || '-').replace(/</g, '&lt;')}</td>
+                    <td class="missing-fields-cell">${missingLabels.replace(/</g, '&lt;')}</td>
+                    <td><button type="button" class="btn btn-sm btn-edit" onclick="App.editBook('${r.book.id}')" title="تعديل"><i class="fas fa-edit"></i></button></td>
+                </tr>`;
+            }).join('');
+            if (footerEl) footerEl.textContent = `عرض ${start + 1} - ${start + pageRows.length} من ${rows.length} كتاب.`;
+            if (pageInfoEl) pageInfoEl.textContent = `صفحة ${this.state.reportsPage} من ${totalPages}`;
+            if (prevBtn) prevBtn.disabled = this.state.reportsPage === 1;
+            if (nextBtn) nextBtn.disabled = this.state.reportsPage === totalPages;
+            if (lastBtn) lastBtn.disabled = this.state.reportsPage === totalPages;
+        }
+    },
+
+    exportReportCSV() {
+        let rows = this.getBooksWithMissingInfo();
+        const filter = this.state.reportsFilter || 'all';
+        if (filter !== 'all') rows = rows.filter(r => r.missing.includes(filter));
+        if (rows.length === 0) {
+            alert('لا يوجد ما يتم تصديره.');
+            return;
+        }
+        const headers = ['م', 'اسم الكتاب', 'المؤلف', 'القسم', 'الحقول الناقصة'];
+        const csvRows = rows.map((r, i) => {
+            const missingLabels = r.missing.map(m => this.REPORT_FIELDS[m]).join('؛ ');
+            return [i + 1, r.book.name || '', r.book.author || '', r.book.category || '', missingLabels].map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',');
+        });
+        const csv = '\uFEFF' + [headers.join(','), ...csvRows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `تقرير-الكتب-الناقصة-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
     },
 
     // ========== SETTINGS - BACKUP ==========
@@ -1310,6 +1543,84 @@ const App = {
 
         // Publishers
         document.getElementById('add-publisher-btn').addEventListener('click', () => this.handleAddPublisher());
+        document.getElementById('sync-publishers-from-books-btn').addEventListener('click', () => this.syncPublishersFromBooks());
+
+        // Authors list: click card to open books filtered by that author
+        const authorsListEl = document.getElementById('authors-list');
+        if (authorsListEl) {
+            authorsListEl.addEventListener('click', (e) => {
+                const card = e.target.closest('.item-card-clickable[data-author]');
+                if (card && card.dataset.author) this.goToBooksByAuthor(card.dataset.author);
+            });
+            authorsListEl.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const card = e.target.closest('.item-card-clickable[data-author]');
+                if (card && card.dataset.author) { e.preventDefault(); this.goToBooksByAuthor(card.dataset.author); }
+            });
+        }
+        document.getElementById('authors-prev-page').addEventListener('click', () => {
+            if (this.state.authorsPage > 1) {
+                this.state.authorsPage--;
+                this.renderAuthors();
+            }
+        });
+        document.getElementById('authors-next-page').addEventListener('click', () => {
+            this.state.authorsPage++;
+            this.renderAuthors();
+        });
+        document.getElementById('authors-last-page').addEventListener('click', () => {
+            this.state.authorsPage = 999999;
+            this.renderAuthors();
+        });
+
+        // Reports: clickable filter cards (event delegation)
+        const reportsSummaryEl = document.getElementById('reports-summary');
+        if (reportsSummaryEl) {
+            reportsSummaryEl.addEventListener('click', (e) => {
+                const card = e.target.closest('.report-stat-card.clickable');
+                if (!card || !card.dataset.filter) return;
+                this.state.reportsFilter = card.dataset.filter;
+                this.state.reportsPage = 1;
+                this.renderReports();
+            });
+            reportsSummaryEl.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const card = e.target.closest('.report-stat-card.clickable');
+                if (!card || !card.dataset.filter) return;
+                e.preventDefault();
+                this.state.reportsFilter = card.dataset.filter;
+                this.state.reportsPage = 1;
+                this.renderReports();
+            });
+        }
+        const exportReportBtn = document.getElementById('export-report-btn');
+        if (exportReportBtn) exportReportBtn.addEventListener('click', () => this.exportReportCSV());
+        document.getElementById('reports-prev-page').addEventListener('click', () => {
+            if (this.state.reportsPage > 1) {
+                this.state.reportsPage--;
+                this.renderReports();
+            }
+        });
+        document.getElementById('reports-next-page').addEventListener('click', () => {
+            let rows = this.getBooksWithMissingInfo();
+            const filter = this.state.reportsFilter || 'all';
+            if (filter !== 'all') rows = rows.filter(r => r.missing.includes(filter));
+            const totalPages = Math.max(1, Math.ceil(rows.length / this.state.reportsPerPage));
+            if (this.state.reportsPage < totalPages) {
+                this.state.reportsPage++;
+                this.renderReports();
+            }
+        });
+        document.getElementById('reports-last-page').addEventListener('click', () => {
+            let rows = this.getBooksWithMissingInfo();
+            const filter = this.state.reportsFilter || 'all';
+            if (filter !== 'all') rows = rows.filter(r => r.missing.includes(filter));
+            const totalPages = Math.max(1, Math.ceil(rows.length / this.state.reportsPerPage));
+            if (this.state.reportsPage !== totalPages) {
+                this.state.reportsPage = totalPages;
+                this.renderReports();
+            }
+        });
 
         // Settings - backup export
         document.getElementById('export-backup-btn').addEventListener('click', () => this.exportBackupExcel());
