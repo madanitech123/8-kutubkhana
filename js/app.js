@@ -656,14 +656,29 @@ const App = {
             try {
                 const result = await Promise.resolve(DataManager.importBooksFromCSV(event.target.result, onProgress));
                 if (result.success) {
-                    let msg = '';
-                    if (result.count > 0) msg += `تم استيراد ${result.count} كتاب جديد.`;
-                    if (result.updatedCount > 0) msg += (msg ? '\n' : '') + `تم تحديث ${result.updatedCount} كتاب (كانت موجودة مسبقاً بنفس الاسم والمؤلف، وتم تحديث بياناتها).`;
-                    if (!msg) msg = 'تمت معالجة الملف.';
-                    if (result.skipped > 0) msg += `\nتم تخطي ${result.skipped} صف لعدم اكتمال الحقول الإلزامية.`;
-                    if (result.failCount > 0) msg += `\nفشل استيراد ${result.failCount} صف.`;
                     const totalBooks = DataManager.getBooks().length;
-                    msg += `\nالإجمالي في القائمة الآن: ${totalBooks} كتاباً.`;
+                    let msg = '✅ تم استيراد CSV بنجاح!\n\n';
+                    msg += `📥 نتائج الاستيراد:\n`;
+                    msg += `• كتب جديدة: ${result.count}\n`;
+                    msg += `• كتب محدّثة: ${result.updatedCount} (تغيّرت بياناتها)\n`;
+                    msg += `• بدون تغيير: ${result.unchangedCount || 0} (نفس البيانات)\n`;
+                    if (result.skipped > 0) msg += `• تم تخطيها: ${result.skipped} (حقول ناقصة)\n`;
+                    if (result.failCount > 0) msg += `• فشل: ${result.failCount}\n`;
+                    msg += `\n📚 إجمالي الكتب الآن: ${totalBooks}`;
+                    if (result.updateDetails && result.updateDetails.length > 0) {
+                        msg += `\n\n📝 تفاصيل التحديثات:`;
+                        result.updateDetails.slice(0, 10).forEach((item, idx) => {
+                            msg += `\n\n${idx + 1}. "${item.bookName}" - ${item.author}`;
+                            item.changes.forEach(c => {
+                                const oldVal = c.old || '(فارغ)';
+                                const newVal = c.new || '(فارغ)';
+                                msg += `\n   • ${c.field}: "${oldVal}" ← "${newVal}"`;
+                            });
+                        });
+                        if (result.updateDetails.length > 10) {
+                            msg += `\n\n... و ${result.updateDetails.length - 10} كتب أخرى`;
+                        }
+                    }
                     alert(msg);
                     this.navigateTo('books');
                 } else {

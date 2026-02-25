@@ -648,15 +648,37 @@
                 };
                 const existingBook = existing.find(b =>
                     (b.name || '').trim().toLowerCase() === name.toLowerCase() &&
-                    (b.author || '').trim().toLowerCase() === author.toLowerCase()
+                    (b.author || '').trim().toLowerCase() === author.toLowerCase() &&
+                    (b.publisher || '').trim().toLowerCase() === publisherVal.toLowerCase()
                 );
                 if (existingBook) {
-                    tasks.push({ type: 'update', id: existingBook.id, book });
+                    const normalize = (v) => (v == null ? '' : String(v).trim());
+                    const normalizeNum = (v, def = 1) => {
+                        const n = parseInt(v, 10);
+                        return isNaN(n) ? def : n;
+                    };
+                    const changes = [];
+                    if (normalize(existingBook.editor) !== normalize(book.editor)) changes.push({ field: 'المحقق', old: existingBook.editor, new: book.editor });
+                    if (normalize(existingBook.category) !== normalize(book.category)) changes.push({ field: 'القسم', old: existingBook.category, new: book.category });
+                    if (normalizeNum(existingBook.parts) !== normalizeNum(book.parts)) changes.push({ field: 'الأجزاء', old: existingBook.parts, new: book.parts });
+                    if (normalize(existingBook.year) !== normalize(book.year)) changes.push({ field: 'السنة', old: existingBook.year, new: book.year });
+                    if (normalizeNum(existingBook.copies) !== normalizeNum(book.copies)) changes.push({ field: 'النسخ', old: existingBook.copies, new: book.copies });
+                    if (normalize(existingBook.status) !== normalize(book.status)) changes.push({ field: 'الحالة', old: existingBook.status, new: book.status });
+                    if (normalize(existingBook.cabinet) !== normalize(book.cabinet)) changes.push({ field: 'الصندوق', old: existingBook.cabinet, new: book.cabinet });
+                    if (normalize(existingBook.shelf) !== normalize(book.shelf)) changes.push({ field: 'الطاق', old: existingBook.shelf, new: book.shelf });
+                    if (normalize(existingBook.notes) !== normalize(book.notes)) changes.push({ field: 'ملاحظات', old: existingBook.notes, new: book.notes });
+                    if (changes.length > 0) {
+                        tasks.push({ type: 'update', id: existingBook.id, book, bookName: existingBook.name, author: existingBook.author, changes });
+                    } else {
+                        tasks.push({ type: 'unchanged', id: existingBook.id });
+                    }
                 } else {
                     tasks.push({ type: 'add', book });
+                    existing.push({ name, author, publisher: publisherVal });
                 }
             }
-            const total = tasks.length;
+            const unchangedCount = tasks.filter(t => t.type === 'unchanged').length;
+            const total = tasks.filter(t => t.type !== 'unchanged').length;
             if (typeof onProgress === 'function') onProgress(0, total);
             const addCategoriesParallel = (names) => {
                 const toAdd = Array.from(names).filter(n => n && !cache.categories.includes(n));
@@ -725,13 +747,20 @@
                                 })
                         );
                     }
+                    const updateDetails = updateTasks.map(t => ({
+                        bookName: t.bookName,
+                        author: t.author,
+                        changes: t.changes
+                    }));
                     return chain.then(() => ({
                         success: true,
                         count: actualAddCount,
                         books: [],
                         updatedCount: actualUpdateCount,
+                        unchangedCount,
                         skipped,
-                        failCount
+                        failCount,
+                        updateDetails
                     }));
                 })
                 .catch(err => ({ success: false, message: err?.message || 'خطأ في الاستيراد' }));
