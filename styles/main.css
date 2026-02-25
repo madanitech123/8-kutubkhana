@@ -159,6 +159,48 @@ body {
     padding: var(--spacing-md) var(--spacing-lg);
 }
 
+.login-forgot-wrap {
+    margin-top: var(--spacing-md);
+    text-align: center;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.btn-link:hover {
+    color: var(--primary-hover);
+}
+
+.forgot-password-form {
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-light);
+}
+
+.forgot-password-form .form-group {
+    margin-bottom: var(--spacing-sm);
+}
+
+.forgot-password-form .btn {
+    width: auto;
+    margin-left: var(--spacing-sm);
+}
+
+.change-password-form {
+    max-width: 360px;
+}
+
+.change-password-form .form-group {
+    margin-bottom: var(--spacing-md);
+}
+
 /* === App Container === */
 .app-container {
     min-height: 100vh;
@@ -1304,6 +1346,16 @@ body {
     font-size: 0.9rem;
     color: var(--text-muted);
 }
+
+/* Settings: user management */
+.settings-admin-wrap .users-section .data-table { margin-top: 0; }
+.role-badge { display: inline-block; padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 500; }
+.role-badge.role-admin { background: rgba(90, 138, 122, 0.2); color: var(--primary-color); }
+.role-badge.role-librarian { background: rgba(106, 138, 154, 0.2); color: var(--info-color); }
+.role-badge.role-viewer { background: var(--border-light); color: var(--text-secondary); }
+.user-role-select { padding: var(--spacing-xs) var(--spacing-sm); border-radius: var(--radius-sm); margin-left: var(--spacing-sm); }
+.settings-no-access { text-align: center; padding: var(--spacing-xl); color: var(--text-secondary); }
+.settings-no-access i { font-size: 2rem; margin-bottom: var(--spacing-sm); display: block; color: var(--text-muted); }
 
 /* === Modals === */
 .modal-overlay {

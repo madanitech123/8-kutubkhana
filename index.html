@@ -32,6 +32,17 @@
                             <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
                         </button>
                     </div>
+                    <p class="login-forgot-wrap">
+                        <button type="button" id="forgot-password-btn" class="btn-link">نسيت كلمة المرور؟</button>
+                    </p>
+                    <div id="forgot-password-form" class="forgot-password-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="forgot-email">البريد الإلكتروني</label>
+                            <input type="email" id="forgot-email" placeholder="أدخل بريدك">
+                        </div>
+                        <button type="button" id="send-reset-btn" class="btn btn-secondary">إرسال رابط إعادة التعيين</button>
+                        <button type="button" id="forgot-cancel-btn" class="btn btn-outline">إلغاء</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -256,10 +267,10 @@
                 <div class="page-header">
                     <h1>قائمة الكتب</h1>
                     <div class="header-actions">
-                        <button class="btn btn-primary" id="export-csv-btn">
+                        <button class="btn btn-primary" id="export-csv-btn" data-require-role="edit">
                             <i class="fas fa-download"></i> تصدير CSV
                         </button>
-                        <button class="btn btn-danger" id="bulk-delete-btn" style="display: none;">
+                        <button class="btn btn-danger" id="bulk-delete-btn" style="display: none;" data-require-role="edit">
                             <i class="fas fa-trash"></i> حذف المحدد (<span id="selected-count">0</span>)
                         </button>
                     </div>
@@ -268,7 +279,7 @@
                     <table class="data-table" id="books-table">
                         <thead>
                             <tr>
-                                <th>
+                                <th data-require-role="edit">
                                     <input type="checkbox" id="select-all-books">
                                 </th>
                                 <th class="col-num">م</th>
@@ -320,7 +331,7 @@
                                     <span>الطاق</span>
                                     <input type="text" class="filter-input" data-column="shelf" placeholder="بحث...">
                                 </th>
-                                <th>إجراءات</th>
+                                <th data-require-role="edit">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="books-tbody">
@@ -424,10 +435,10 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-plus"></i> إضافة الكتاب
                             </button>
-                            <button type="button" class="btn btn-secondary" id="import-csv-btn">
+                            <button type="button" class="btn btn-secondary" id="import-csv-btn" data-require-role="edit">
                                 <i class="fas fa-upload"></i> استيراد من CSV
                             </button>
-                            <button type="button" class="btn btn-outline" id="download-template-btn">
+                            <button type="button" class="btn btn-outline" id="download-template-btn" data-require-role="edit">
                                 <i class="fas fa-download"></i> تنزيل نموذج CSV
                             </button>
                         </div>
@@ -440,7 +451,7 @@
             <div id="loans-page" class="page">
                 <div class="page-header">
                     <h1>سجل الإعارات</h1>
-                    <button class="btn btn-primary" id="new-loan-btn">
+                        <button class="btn btn-primary" id="new-loan-btn" data-require-role="edit">
                         <i class="fas fa-plus"></i> إعارة جديدة
                     </button>
                 </div>
@@ -467,7 +478,7 @@
                                         <option value="مُرجع">مُرجع</option>
                                     </select>
                                 </th>
-                                <th>إجراءات</th>
+                                <th data-require-role="edit">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="loans-tbody">
@@ -491,7 +502,7 @@
                             </select>
                         </div>
                         <textarea id="new-log-entry" placeholder="أدخل محتوى اليومية..." rows="3"></textarea>
-                        <button class="btn btn-primary" id="add-log-btn">
+                        <button class="btn btn-primary" id="add-log-btn" data-require-role="edit">
                             <i class="fas fa-plus"></i> إضافة يومية
                         </button>
                     </div>
@@ -509,15 +520,15 @@
                         <input type="text" id="new-member-name" placeholder="اسم العضو">
                         <input type="text" id="new-member-phone" placeholder="رقم الهاتف">
                         <input type="text" id="new-member-address" placeholder="العنوان">
-                        <button class="btn btn-primary" id="add-member-btn">
+                        <button class="btn btn-primary" id="add-member-btn" data-require-role="edit">
                             <i class="fas fa-plus"></i> إضافة عضو
                         </button>
                     </div>
-                    <div class="bulk-actions" id="members-bulk-actions" style="display: none;">
+                    <div class="bulk-actions" id="members-bulk-actions" style="display: none;" data-require-role="edit">
                         <label>
                             <input type="checkbox" id="select-all-members"> تحديد الكل
                         </label>
-                        <button class="btn btn-danger" id="bulk-delete-members-btn">
+                        <button class="btn btn-danger" id="bulk-delete-members-btn" data-require-role="edit">
                             <i class="fas fa-trash"></i> حذف المحدد (<span id="selected-members-count">0</span>)
                         </button>
                     </div>
@@ -533,7 +544,7 @@
                 <div class="manage-container">
                     <div class="add-item">
                         <input type="text" id="new-category" placeholder="اسم القسم الجديد">
-                        <button class="btn btn-primary" id="add-category-btn">
+                        <button class="btn btn-primary" id="add-category-btn" data-require-role="edit">
                             <i class="fas fa-plus"></i> إضافة تصنيف
                         </button>
                     </div>
@@ -571,10 +582,10 @@
                 <div class="manage-container">
                     <div class="add-item">
                         <input type="text" id="new-publisher" placeholder="اسم دار النشر الجديدة">
-                        <button class="btn btn-primary" id="add-publisher-btn">
+                        <button class="btn btn-primary" id="add-publisher-btn" data-require-role="edit">
                             <i class="fas fa-plus"></i> إضافة دار نشر
                         </button>
-                        <button type="button" class="btn btn-secondary" id="sync-publishers-from-books-btn" title="إضافة دور النشر الموجودة في الكتب إلى القائمة">
+                        <button type="button" class="btn btn-secondary" id="sync-publishers-from-books-btn" data-require-role="edit" title="إضافة دور النشر الموجودة في الكتب إلى القائمة">
                             <i class="fas fa-sync-alt"></i> استيراد من قائمة الكتب
                         </button>
                     </div>
@@ -594,7 +605,7 @@
                 </div>
 
                 <div class="reports-toolbar">
-                    <button type="button" class="btn btn-primary" id="export-report-btn">
+                    <button type="button" class="btn btn-primary" id="export-report-btn" data-require-role="edit">
                         <i class="fas fa-download"></i> تصدير التقرير CSV
                     </button>
                 </div>
@@ -608,7 +619,7 @@
                                 <th>المؤلف</th>
                                 <th>القسم</th>
                                 <th>الحقول الناقصة</th>
-                                <th>إجراءات</th>
+                                <th data-require-role="edit">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="reports-tbody">
@@ -634,25 +645,64 @@
             <!-- Settings Page -->
             <div id="settings-page" class="page">
                 <h1>الإعدادات</h1>
-                <div class="settings-section backup-section">
-                    <h2><i class="fas fa-file-excel"></i> تصدير نسخة احتياطية (Excel)</h2>
-                    <p class="settings-desc">اختر ما تريد تصديره ثم اضغط تصدير. سيتم إنشاء ملف Excel بجداول منفصلة.</p>
-                    <div class="backup-options">
-                        <label class="backup-option"><input type="checkbox" id="backup-books" checked> الكتب</label>
-                        <label class="backup-option"><input type="checkbox" id="backup-members" checked> الأعضاء</label>
-                        <label class="backup-option"><input type="checkbox" id="backup-loans" checked> الإعارات</label>
-                        <label class="backup-option"><input type="checkbox" id="backup-diary" checked> اليوميات</label>
-                    </div>
-                    <button type="button" class="btn btn-primary" id="export-backup-btn">
-                        <i class="fas fa-download"></i> تصدير Excel
-                    </button>
+                <div class="settings-section password-section">
+                    <h2><i class="fas fa-key"></i> تغيير كلمة المرور</h2>
+                    <p class="settings-desc">تغيير كلمة مرور حسابك الحالي.</p>
+                    <form id="change-password-form" class="change-password-form">
+                        <div class="form-group">
+                            <label for="new-password">كلمة المرور الجديدة</label>
+                            <input type="password" id="new-password" name="newPassword" minlength="6" placeholder="6 أحرف على الأقل" autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">تأكيد كلمة المرور</label>
+                            <input type="password" id="confirm-password" name="confirmPassword" placeholder="أعد إدخال كلمة المرور" autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ كلمة المرور</button>
+                    </form>
                 </div>
-                <div class="settings-section danger-section">
-                    <h2><i class="fas fa-trash-alt"></i> حذف كل البيانات</h2>
-                    <p class="settings-desc">حذف جميع الكتب والأعضاء والإعارات واليوميات. لا يمكن التراجع.</p>
-                    <button type="button" class="btn btn-danger" id="delete-all-data-btn">
-                        <i class="fas fa-exclamation-triangle"></i> حذف كل البيانات
-                    </button>
+                <div id="settings-admin-only" class="settings-admin-wrap">
+                    <div class="settings-section users-section">
+                        <h2><i class="fas fa-users-cog"></i> إدارة المستخدمين والصلاحيات</h2>
+                        <p class="settings-desc">تعديل دور كل مستخدم. المدير: صلاحية كاملة. أمين المكتبة: كل شيء ما عدا حذف كل البيانات. المشاهد: عرض فقط.</p>
+                        <div class="table-container">
+                            <table class="data-table" id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-num">م</th>
+                                        <th>البريد الإلكتروني</th>
+                                        <th>الدور</th>
+                                        <th>تعديل الدور</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="settings-desc" id="users-table-hint">جارٍ التحميل...</p>
+                    </div>
+                    <div class="settings-section backup-section">
+                        <h2><i class="fas fa-file-excel"></i> تصدير نسخة احتياطية (Excel)</h2>
+                        <p class="settings-desc">اختر ما تريد تصديره ثم اضغط تصدير. سيتم إنشاء ملف Excel بجداول منفصلة.</p>
+                        <div class="backup-options">
+                            <label class="backup-option"><input type="checkbox" id="backup-books" checked> الكتب</label>
+                            <label class="backup-option"><input type="checkbox" id="backup-members" checked> الأعضاء</label>
+                            <label class="backup-option"><input type="checkbox" id="backup-loans" checked> الإعارات</label>
+                            <label class="backup-option"><input type="checkbox" id="backup-diary" checked> اليوميات</label>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="export-backup-btn">
+                            <i class="fas fa-download"></i> تصدير Excel
+                        </button>
+                    </div>
+                    <div class="settings-section danger-section">
+                        <h2><i class="fas fa-trash-alt"></i> حذف كل البيانات</h2>
+                        <p class="settings-desc">حذف جميع الكتب والأعضاء والإعارات واليوميات. لا يمكن التراجع.</p>
+                        <button type="button" class="btn btn-danger" id="delete-all-data-btn">
+                            <i class="fas fa-exclamation-triangle"></i> حذف كل البيانات
+                        </button>
+                    </div>
+                </div>
+                <div id="settings-no-access" class="settings-no-access" style="display: none;">
+                    <p><i class="fas fa-lock"></i> هذه الصفحة متاحة للمدير فقط.</p>
                 </div>
             </div>
         </main>

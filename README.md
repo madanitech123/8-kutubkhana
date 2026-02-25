@@ -69,6 +69,14 @@ kutubkhana/
 - **بدون إعداد**: البيانات تُحفظ في **localStorage** في المتصفح (لا حاجة لخادم، يعمل بدون إنترنت).
 - **مع Supabase**: انسخ `js/config.example.js` إلى `js/config.js` وضَع عنوان المشروع والمفتاح العام (anon key). ثم شغّل السكربت SQL الموجود في `supabase/schema.sql` من لوحة Supabase (SQL Editor). بعدها سيتم حفظ الكتب والأعضاء والإعارات واليوميات في Supabase تلقائياً.
 
+### أدوار المستخدمين (Profiles & roles)
+- شغّل أيضاً `supabase/migrations/001_profiles_roles.sql` في SQL Editor لإنشاء جدول **profiles** والصلاحيات.
+- الأدوار: **مدير (admin)**، **أمين المكتبة (librarian)**، **مشاهد (viewer)**. المدير فقط يرى صفحة الإعدادات وإدارة المستخدمين.
+- بعد أول تسجيل دخول لأي مستخدم، يتم إنشاء صف له في `profiles` بدور **مشاهد**. لتعيين أول مدير، نفّذ في SQL Editor:
+  ```sql
+  UPDATE profiles SET role = 'admin' WHERE email = 'بريد-المدير@example.com';
+  ```
+
 ## 📥 استيراد Excel
 
 ### نموذج الكتب:

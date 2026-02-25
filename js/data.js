@@ -622,7 +622,13 @@ const SupabaseOnlyStub = {
     },
     importBooksFromCSV() { return Promise.resolve({ success: false, message: 'يرجى إعداد Supabase أولاً.', count: 0, books: [], updatedCount: 0, updated: [], skipped: 0 }); },
     clearAllData() { return Promise.resolve(); },
-    syncPublishersFromBooks() { return Promise.resolve({ added: 0 }); }
+    syncPublishersFromBooks() { return Promise.resolve({ added: 0 }); },
+    getCurrentUserRole() { return 'viewer'; },
+    getProfile() { return null; },
+    listProfiles() { return Promise.resolve([]); },
+    updateUserRole() { return Promise.reject(new Error('Supabase required')); },
+    updateOwnPassword() { return Promise.reject(new Error('Supabase required')); },
+    sendPasswordResetEmail() { return Promise.reject(new Error('Supabase required')); }
 };
 
 // Use Supabase when configured; otherwise stub (no localStorage, no hardcoded data)

@@ -76,8 +76,29 @@
 
     let readyPromise = null;
     let authUser = null;
+    let currentUserProfile = null;
 
     const PAGE_SIZE = 1000;
+
+    async function ensureProfile() {
+        if (!authUser) return;
+        const uid = authUser.id;
+        const email = authUser.email || '';
+        const { data: existing } = await sb.from('profiles').select('*').eq('user_id', uid).maybeSingle();
+        if (existing) {
+            currentUserProfile = { user_id: existing.user_id, email: existing.email || '', role: existing.role || 'viewer', display_name: existing.display_name || '' };
+            return;
+        }
+        const { data: inserted, error } = await sb.from('profiles').insert({ user_id: uid, email, role: 'viewer' }).select().single();
+        if (error) {
+            if (error.code === '23505') {
+                const { data: row } = await sb.from('profiles').select('*').eq('user_id', uid).single();
+                if (row) currentUserProfile = { user_id: row.user_id, email: row.email || '', role: row.role || 'viewer', display_name: row.display_name || '' };
+            }
+            return;
+        }
+        currentUserProfile = inserted ? { user_id: inserted.user_id, email: inserted.email || '', role: inserted.role || 'viewer', display_name: inserted.display_name || '' } : null;
+    }
 
     async function fetchAllFromTable(table, orderBy, ascending = false) {
         const all = [];
@@ -120,13 +141,41 @@
                 readyPromise = (async () => {
                     const { data: { session } } = await sb.auth.getSession();
                     authUser = session?.user ?? null;
-                    sb.auth.onAuthStateChange((_event, session) => {
+                    sb.auth.onAuthStateChange(async (_event, session) => {
                         authUser = session?.user ?? null;
+                        currentUserProfile = null;
+                        if (authUser) await ensureProfile();
                     });
+                    await ensureProfile();
                     await fetchAll();
                 })();
             }
             return readyPromise;
+        },
+
+        getCurrentUserRole() {
+            return currentUserProfile?.role || 'viewer';
+        },
+
+        getProfile() {
+            return currentUserProfile ? { ...currentUserProfile } : null;
+        },
+
+        listProfiles() {
+            return sb.from('profiles').select('user_id, email, role, display_name, created_at').order('email').then(({ data, error }) => {
+                if (error) return Promise.reject(error);
+                return (data || []).map(r => ({ userId: r.user_id, email: r.email || '', role: r.role || 'viewer', displayName: r.display_name || '', createdAt: r.created_at }));
+            });
+        },
+
+        updateUserRole(userId, role) {
+            if (!['admin', 'librarian', 'viewer'].includes(role)) return Promise.reject(new Error('Invalid role'));
+            return sb.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('user_id', userId).select().single()
+                .then(({ data, error }) => {
+                    if (error) return Promise.reject(error);
+                    if (data && data.user_id === authUser?.id) currentUserProfile = currentUserProfile ? { ...currentUserProfile, role: data.role } : { user_id: data.user_id, email: data.email || '', role: data.role || 'viewer', display_name: data.display_name || '' };
+                    return data;
+                });
         },
 
         ensureReady() {
@@ -486,6 +535,22 @@
         isLoggedIn() { return !!authUser; },
         logout() {
             return sb.auth.signOut().then(() => { authUser = null; });
+        },
+
+        updateOwnPassword(newPassword) {
+            return sb.auth.updateUser({ password: newPassword }).then(({ data, error }) => {
+                if (error) return Promise.reject(error);
+                return data;
+            });
+        },
+
+        sendPasswordResetEmail(email) {
+            return sb.auth.resetPasswordForEmail((email || '').trim(), {
+                redirectTo: typeof window !== 'undefined' && window.location ? window.location.origin + (window.location.pathname || '/') : undefined
+            }).then(({ data, error }) => {
+                if (error) return Promise.reject(error);
+                return data;
+            });
         },
 
         exportBooksToCSV() {

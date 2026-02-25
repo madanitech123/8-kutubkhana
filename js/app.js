@@ -17,7 +17,17 @@ const App = {
         reportsPage: 1,
         reportsPerPage: 100,
         authorsPage: 1,
-        authorsPerPage: 100
+        authorsPerPage: 100,
+        userRole: 'viewer'
+    },
+
+    isAdmin() {
+        return (this.state.userRole || DataManager.getCurrentUserRole?.() || 'viewer') === 'admin';
+    },
+
+    canEdit() {
+        const r = this.state.userRole || DataManager.getCurrentUserRole?.() || 'viewer';
+        return r === 'admin' || r === 'librarian';
     },
 
     // Field labels for reports (key -> Arabic label)
@@ -63,7 +73,24 @@ const App = {
     showApp() {
         document.getElementById('login-page').classList.remove('active');
         document.querySelector('.app-container').style.display = 'flex';
-        DataManager.ensureReady().then(() => this.navigateTo('dashboard'));
+        DataManager.ensureReady().then(() => {
+            this.state.userRole = DataManager.getCurrentUserRole ? DataManager.getCurrentUserRole() : 'viewer';
+            this.updateNavForRole();
+            this.navigateTo('dashboard');
+        });
+    },
+
+    updateNavForRole() {
+        const canEdit = this.canEdit();
+        document.querySelectorAll('.nav-item[data-page="settings"], .mobile-nav-card[data-page="settings"]').forEach(el => {
+            el.style.display = ''; // Settings visible to all (change password); admin-only sections hidden inside
+        });
+        document.querySelectorAll('.nav-item[data-page="add-book"], .mobile-nav-card[data-page="add-book"]').forEach(el => {
+            el.style.display = canEdit ? '' : 'none';
+        });
+        document.querySelectorAll('[data-require-role="edit"]').forEach(el => {
+            el.style.display = canEdit ? '' : 'none';
+        });
     },
 
     async handleLogin(e) {
@@ -150,7 +177,131 @@ const App = {
                 this.renderReports();
                 break;
             case 'settings':
+                this.renderSettings();
                 break;
+        }
+    },
+
+    renderSettings() {
+        const isAdmin = this.isAdmin();
+        const adminEl = document.getElementById('settings-admin-only');
+        const noAccessEl = document.getElementById('settings-no-access');
+        if (adminEl) adminEl.style.display = isAdmin ? 'block' : 'none';
+        if (noAccessEl) noAccessEl.style.display = isAdmin ? 'none' : 'block';
+        if (isAdmin) this.renderSettingsUsers();
+    },
+
+    async renderSettingsUsers() {
+        const tbody = document.getElementById('users-tbody');
+        const hint = document.getElementById('users-table-hint');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        if (hint) hint.textContent = 'جارٍ التحميل...';
+        try {
+            const list = await Promise.resolve(DataManager.listProfiles());
+            if (hint) hint.textContent = '';
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">لا يوجد مستخدمون مسجلون.</td></tr>';
+                return;
+            }
+            const roleLabels = { admin: 'مدير', librarian: 'أمين المكتبة', viewer: 'مشاهد' };
+            tbody.innerHTML = list.map((u, i) => `
+                <tr data-user-id="${u.userId}">
+                    <td class="col-num">${i + 1}</td>
+                    <td>${(u.email || '').replace(/</g, '&lt;')}</td>
+                    <td><span class="role-badge role-${u.role}">${roleLabels[u.role] || u.role}</span></td>
+                    <td>
+                        <select class="user-role-select" data-user-id="${u.userId}" data-current="${u.role}">
+                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>مدير</option>
+                            <option value="librarian" ${u.role === 'librarian' ? 'selected' : ''}>أمين المكتبة</option>
+                            <option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>مشاهد</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-primary save-role-btn" data-user-id="${u.userId}" style="margin-right: 6px;">حفظ</button>
+                    </td>
+                </tr>
+            `).join('');
+            tbody.querySelectorAll('.save-role-btn').forEach(btn => {
+                btn.addEventListener('click', () => this.saveUserRole(btn.dataset.userId));
+            });
+            tbody.querySelectorAll('.user-role-select').forEach(sel => {
+                sel.addEventListener('change', () => {
+                    const row = sel.closest('tr');
+                    const saveBtn = row.querySelector('.save-role-btn');
+                    if (saveBtn) saveBtn.style.visibility = sel.value !== sel.dataset.current ? 'visible' : 'hidden';
+                });
+            });
+            tbody.querySelectorAll('.save-role-btn').forEach(btn => {
+                btn.style.visibility = btn.previousElementSibling?.value === btn.previousElementSibling?.dataset.current ? 'hidden' : 'visible';
+            });
+        } catch (e) {
+            if (hint) hint.textContent = 'فشل تحميل القائمة: ' + (e?.message || e);
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">خطأ في التحميل.</td></tr>';
+        }
+    },
+
+    async saveUserRole(userId) {
+        const row = document.querySelector(`#users-tbody tr[data-user-id="${userId}"]`);
+        const select = row?.querySelector('.user-role-select');
+        const btn = row?.querySelector('.save-role-btn');
+        if (!select || !userId) return;
+        const role = select.value;
+        try {
+            await Promise.resolve(DataManager.updateUserRole(userId, role));
+            select.dataset.current = role;
+            if (btn) btn.style.visibility = 'hidden';
+            this.state.userRole = DataManager.getCurrentUserRole ? DataManager.getCurrentUserRole() : this.state.userRole;
+            this.updateNavForRole();
+        } catch (e) {
+            alert('فشل تحديث الدور: ' + (e?.message || e));
+        }
+    },
+
+    async handleChangePassword(e) {
+        e.preventDefault();
+        const newP = document.getElementById('new-password').value;
+        const confirmP = document.getElementById('confirm-password').value;
+        if (!newP || newP.length < 6) {
+            alert('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.');
+            return;
+        }
+        if (newP !== confirmP) {
+            alert('كلمة المرور وتأكيد كلمة المرور غير متطابقتين.');
+            return;
+        }
+        try {
+            await Promise.resolve(DataManager.updateOwnPassword(newP));
+            document.getElementById('change-password-form').reset();
+            alert('تم تغيير كلمة المرور بنجاح.');
+        } catch (err) {
+            alert('فشل تغيير كلمة المرور: ' + (err?.message || err));
+        }
+    },
+
+    toggleForgotPasswordForm() {
+        const form = document.getElementById('forgot-password-form');
+        const wrap = document.querySelector('.login-forgot-wrap');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            if (wrap) wrap.style.display = 'none';
+            document.getElementById('forgot-email').value = document.getElementById('login-email').value.trim();
+        } else {
+            form.style.display = 'none';
+            if (wrap) wrap.style.display = 'block';
+        }
+    },
+
+    async handleSendPasswordReset() {
+        const email = document.getElementById('forgot-email').value.trim();
+        if (!email) {
+            alert('أدخل البريد الإلكتروني.');
+            return;
+        }
+        try {
+            await Promise.resolve(DataManager.sendPasswordResetEmail(email));
+            alert('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك. راجع صندوق الوارد واتبع الرابط.');
+            this.toggleForgotPasswordForm();
+        } catch (err) {
+            alert('فشل الإرسال: ' + (err?.message || err));
         }
     },
 
@@ -182,11 +333,12 @@ const App = {
         const pageBooks = books.slice(start, end);
 
         const tbody = document.getElementById('books-tbody');
-        
+        const showEdit = this.canEdit();
+        const emptyColspan = showEdit ? 14 : 12;
         if (pageBooks.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="14" class="empty-state">
+                    <td colspan="${emptyColspan}" class="empty-state">
                         <i class="fas fa-book-open"></i>
                         <p>لا توجد كتب للعرض</p>
                     </td>
@@ -195,19 +347,18 @@ const App = {
         } else {
             tbody.innerHTML = pageBooks.map((book, index) => {
                 const rowNum = start + index + 1;
+                const checkboxTd = showEdit ? `<td><input type="checkbox" class="book-checkbox" value="${book.id}" ${this.state.selectedBooks.has(book.id) ? 'checked' : ''}></td>` : '';
+                const actionsTd = showEdit ? `<td><div class="action-btns"><button class="btn btn-sm btn-edit" onclick="App.editBook('${book.id}')" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-delete" onclick="App.confirmDeleteBook('${book.id}')" title="حذف"><i class="fas fa-trash"></i></button></div></td>` : '';
                 return `
                 <tr data-id="${book.id}">
-                    <td>
-                        <input type="checkbox" class="book-checkbox" value="${book.id}" 
-                            ${this.state.selectedBooks.has(book.id) ? 'checked' : ''}>
-                    </td>
+                    ${checkboxTd}
                     <td class="col-num">${rowNum}</td>
-                    <td class="book-name-highlight">${book.name || '-'}</td>
-                    <td>${book.author || '-'}</td>
-                    <td>${book.category || '-'}</td>
-                    <td>${book.editor || '-'}</td>
+                    <td class="book-name-highlight">${(book.name || '-').replace(/</g, '&lt;')}</td>
+                    <td>${(book.author || '-').replace(/</g, '&lt;')}</td>
+                    <td>${(book.category || '-').replace(/</g, '&lt;')}</td>
+                    <td>${(book.editor || '-').replace(/</g, '&lt;')}</td>
                     <td>${book.parts || 1}</td>
-                    <td>${book.publisher || '-'}</td>
+                    <td>${(book.publisher || '-').replace(/</g, '&lt;')}</td>
                     <td>${book.year || '-'}</td>
                     <td>${book.copies || 1}</td>
                     <td>
@@ -215,18 +366,9 @@ const App = {
                             ${book.status || 'متاح'}
                         </span>
                     </td>
-                    <td>${book.cabinet || '-'}</td>
-                    <td>${book.shelf || '-'}</td>
-                    <td>
-                        <div class="action-btns">
-                            <button class="btn btn-sm btn-edit" onclick="App.editBook('${book.id}')" title="تعديل">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-delete" onclick="App.confirmDeleteBook('${book.id}')" title="حذف">
-                                    <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
+                    <td>${(book.cabinet || '-').replace(/</g, '&lt;')}</td>
+                    <td>${(book.shelf || '-').replace(/</g, '&lt;')}</td>
+                    ${actionsTd}
                 </tr>
             `;
             }).join('');
@@ -570,16 +712,7 @@ const App = {
                             </span>
                         </td>
                         <td>
-                            <div class="action-btns">
-                                ${loan.status === 'معار' ? `
-                                    <button class="btn btn-sm btn-return" onclick="App.returnLoan('${loan.id}')" title="إرجاع">
-                                        <i class="fas fa-undo"></i>
-                                    </button>
-                                ` : ''}
-                                <button class="btn btn-sm btn-delete" onclick="App.confirmDeleteLoan('${loan.id}')" title="حذف">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                            ${this.canEdit() ? `<div class="action-btns">${loan.status === 'معار' ? `<button class="btn btn-sm btn-return" onclick="App.returnLoan('${loan.id}')" title="إرجاع"><i class="fas fa-undo"></i></button>` : ''}<button class="btn btn-sm btn-delete" onclick="App.confirmDeleteLoan('${loan.id}')" title="حذف"><i class="fas fa-trash"></i></button></div>` : '-'}
                         </td>
                     </tr>
                 `;
@@ -702,14 +835,7 @@ const App = {
                                     </span>
                                     <p class="log-item-text">${entry.content}</p>
                                 </div>
-                                <div class="log-item-actions">
-                                    <button class="btn btn-sm btn-edit" onclick="App.editDiaryEntry('${entry.id}')" title="تعديل">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-delete" onclick="App.confirmDeleteDiaryEntry('${entry.id}')" title="حذف">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
+                                ${this.canEdit() ? `<div class="log-item-actions"><button class="btn btn-sm btn-edit" onclick="App.editDiaryEntry('${entry.id}')" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-delete" onclick="App.confirmDeleteDiaryEntry('${entry.id}')" title="حذف"><i class="fas fa-trash"></i></button></div>` : ''}
                             </div>
                         `;
                         }).join('')}
@@ -817,26 +943,20 @@ const App = {
             `;
             document.getElementById('members-bulk-actions').style.display = 'none';
         } else {
-            document.getElementById('members-bulk-actions').style.display = 'flex';
+            const bulkEl = document.getElementById('members-bulk-actions');
+            if (bulkEl) bulkEl.style.display = this.canEdit() ? 'flex' : 'none';
+            const showEdit = this.canEdit();
             container.innerHTML = members.map((member, index) => `
                 <div class="item-card" data-id="${member.id}">
                     <div class="item-info">
                         <span class="item-number">${index + 1}</span>
-                        <input type="checkbox" class="item-checkbox member-checkbox" value="${member.id}"
-                            ${this.state.selectedMembers.has(member.id) ? 'checked' : ''}>
+                        ${showEdit ? `<input type="checkbox" class="item-checkbox member-checkbox" value="${member.id}" ${this.state.selectedMembers.has(member.id) ? 'checked' : ''}>` : ''}
                         <div class="item-details">
                             <h4>${member.name}</h4>
                             <p>${member.phone || ''} ${member.address ? '• ' + member.address : ''}</p>
                         </div>
                     </div>
-                    <div class="item-actions">
-                        <button class="btn btn-sm btn-edit" onclick="App.editMember('${member.id}')" title="تعديل">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-delete" onclick="App.confirmDeleteMember('${member.id}')" title="حذف">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                    ${showEdit ? `<div class="item-actions"><button class="btn btn-sm btn-edit" onclick="App.editMember('${member.id}')" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-delete" onclick="App.confirmDeleteMember('${member.id}')" title="حذف"><i class="fas fa-trash"></i></button></div>` : ''}
                 </div>
             `).join('');
         }
@@ -975,6 +1095,7 @@ const App = {
         const categories = DataManager.getCategories();
         const container = document.getElementById('categories-list');
 
+        const showEdit = this.canEdit();
         container.innerHTML = categories.map((category, index) => `
             <div class="item-card">
                 <div class="item-info">
@@ -983,14 +1104,7 @@ const App = {
                         <h4>${category}</h4>
                     </div>
                 </div>
-                <div class="item-actions">
-                    <button class="btn btn-sm btn-edit" onclick="App.editCategory('${category}')" title="تعديل">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-delete" onclick="App.confirmDeleteCategory('${category}')" title="حذف">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+                ${showEdit ? `<div class="item-actions"><button class="btn btn-sm btn-edit" onclick="App.editCategory('${category.replace(/'/g, "\\'")}')" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-delete" onclick="App.confirmDeleteCategory('${category.replace(/'/g, "\\'")}')" title="حذف"><i class="fas fa-trash"></i></button></div>` : ''}
             </div>
         `).join('');
     },
@@ -1127,22 +1241,16 @@ const App = {
         const publishers = DataManager.getPublishers();
         const container = document.getElementById('publishers-list');
 
+        const showEdit = this.canEdit();
         container.innerHTML = publishers.map((publisher, index) => `
             <div class="item-card">
                 <div class="item-info">
                     <span class="item-number">${index + 1}</span>
                     <div class="item-details">
-                        <h4>${publisher}</h4>
+                        <h4>${publisher.replace(/</g, '&lt;')}</h4>
                     </div>
                 </div>
-                <div class="item-actions">
-                    <button class="btn btn-sm btn-edit" onclick="App.editPublisher('${publisher}')" title="تعديل">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-delete" onclick="App.confirmDeletePublisher('${publisher}')" title="حذف">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+                ${showEdit ? `<div class="item-actions"><button class="btn btn-sm btn-edit" onclick="App.editPublisher('${publisher.replace(/'/g, "\\'")}')" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-delete" onclick="App.confirmDeletePublisher('${publisher.replace(/'/g, "\\'")}')" title="حذف"><i class="fas fa-trash"></i></button></div>` : ''}
             </div>
         `).join('');
     },
@@ -1294,16 +1402,18 @@ const App = {
             if (nextBtn) nextBtn.disabled = true;
             if (lastBtn) lastBtn.disabled = true;
         } else {
+            const showEdit = this.canEdit();
             tbody.innerHTML = pageRows.map((r, i) => {
                 const rowNum = start + i + 1;
                 const missingLabels = r.missing.map(m => this.REPORT_FIELDS[m]).join('، ');
+                const editTd = showEdit ? `<td><button type="button" class="btn btn-sm btn-edit" onclick="App.editBook('${r.book.id}')" title="تعديل"><i class="fas fa-edit"></i></button></td>` : '<td>-</td>';
                 return `<tr>
                     <td class="col-num">${rowNum}</td>
                     <td class="book-name-highlight">${(r.book.name || '-').replace(/</g, '&lt;')}</td>
                     <td>${(r.book.author || '-').replace(/</g, '&lt;')}</td>
                     <td>${(r.book.category || '-').replace(/</g, '&lt;')}</td>
                     <td class="missing-fields-cell">${missingLabels.replace(/</g, '&lt;')}</td>
-                    <td><button type="button" class="btn btn-sm btn-edit" onclick="App.editBook('${r.book.id}')" title="تعديل"><i class="fas fa-edit"></i></button></td>
+                    ${editTd}
                 </tr>`;
             }).join('');
             if (footerEl) footerEl.textContent = `عرض ${start + 1} - ${start + pageRows.length} من ${rows.length} كتاب.`;
@@ -1432,6 +1542,10 @@ const App = {
     bindEvents() {
         // Login form
         document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
+        document.getElementById('forgot-password-btn').addEventListener('click', () => this.toggleForgotPasswordForm());
+        document.getElementById('forgot-cancel-btn').addEventListener('click', () => this.toggleForgotPasswordForm());
+        document.getElementById('send-reset-btn').addEventListener('click', () => this.handleSendPasswordReset());
+        document.getElementById('change-password-form').addEventListener('submit', (e) => this.handleChangePassword(e));
         // Keep legacy id for logout if present
 
         // Logout buttons (desktop + mobile)
