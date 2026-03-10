@@ -80,6 +80,21 @@
 
     const PAGE_SIZE = 1000;
 
+    function validateBook(book, forUpdate) {
+        const name = (book.name || '').trim();
+        const author = (book.author || '').trim();
+        const category = (book.category || '').trim();
+        const cabinet = (book.cabinet || '').trim();
+        if (!name) throw new Error('اسم الكتاب مطلوب');
+        if (!author) throw new Error('المؤلف مطلوب');
+        if (!category) throw new Error('القسم مطلوب');
+        if (!cabinet) throw new Error('الصندوق مطلوب');
+        const parts = book.parts != null ? Number(book.parts) : 1;
+        const copies = book.copies != null ? Number(book.copies) : 1;
+        if (!Number.isInteger(parts) || parts < 1) throw new Error('عدد الأجزاء يجب أن يكون 1 أو أكثر');
+        if (!Number.isInteger(copies) || copies < 1) throw new Error('عدد النسخ يجب أن يكون 1 أو أكثر');
+    }
+
     async function ensureProfile() {
         if (!authUser) return;
         const uid = authUser.id;
@@ -190,17 +205,18 @@
         setBooks(books) { cache.books = books.slice(); },
 
         addBook(book) {
+            validateBook(book);
             const row = {
-                name: book.name || '',
-                author: book.author || '',
-                category: book.category || '',
+                name: (book.name || '').trim(),
+                author: (book.author || '').trim(),
+                category: (book.category || '').trim(),
                 editor: book.editor || '',
-                parts: book.parts != null ? book.parts : 1,
+                parts: book.parts != null ? Math.max(1, parseInt(book.parts, 10) || 1) : 1,
                 publisher: book.publisher || '',
                 year: book.year || '',
-                copies: book.copies != null ? book.copies : 1,
+                copies: book.copies != null ? Math.max(1, parseInt(book.copies, 10) || 1) : 1,
                 status: book.status || 'متاح',
-                cabinet: book.cabinet || '',
+                cabinet: (book.cabinet || '').trim(),
                 shelf: book.shelf || '',
                 notes: book.notes || ''
             };
@@ -214,6 +230,9 @@
         },
 
         updateBook(id, updatedData) {
+            const current = cache.books.find(b => b.id === id);
+            const merged = current ? { ...current, ...updatedData } : { ...updatedData };
+            validateBook(merged);
             const map = {
                 name: 'name', author: 'author', category: 'category', editor: 'editor',
                 parts: 'parts', publisher: 'publisher', year: 'year', copies: 'copies',
@@ -221,6 +240,8 @@
             };
             const obj = { updated_at: new Date().toISOString() };
             Object.keys(map).forEach(k => { if (updatedData[k] !== undefined) obj[map[k]] = updatedData[k]; });
+            if (obj.parts !== undefined) obj.parts = Math.max(1, parseInt(obj.parts, 10) || 1);
+            if (obj.copies !== undefined) obj.copies = Math.max(1, parseInt(obj.copies, 10) || 1);
             return sb.from('books').update(obj).eq('id', id).select().single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
@@ -231,6 +252,8 @@
         },
 
         deleteBook(id) {
+            const activeLoan = cache.loans.some(l => l.bookId === id && l.status === 'معار');
+            if (activeLoan) return Promise.reject(new Error('الكتاب معار حالياً. يرجى تسجيل الإرجاع قبل الحذف.'));
             return sb.from('books').delete().eq('id', id).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.books.length;
@@ -241,6 +264,8 @@
 
         deleteBooks(ids) {
             if (!ids.length) return Promise.resolve(0);
+            const withActiveLoan = ids.filter(bookId => cache.loans.some(l => l.bookId === bookId && l.status === 'معار'));
+            if (withActiveLoan.length > 0) return Promise.reject(new Error('بعض الكتب معارة حالياً. يرجى تسجيل الإرجاع قبل الحذف.'));
             return sb.from('books').delete().in('id', ids).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.books.length;
@@ -278,6 +303,8 @@
         },
 
         deleteMember(id) {
+            const hasActiveLoans = cache.loans.some(l => l.memberId === id && l.status === 'معار');
+            if (hasActiveLoans) return Promise.reject(new Error('لا يمكن حذف العضو. يوجد إعارات نشطة. يرجى إرجاع الكتب أولاً.'));
             return sb.from('members').delete().eq('id', id).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.members.length;
@@ -288,6 +315,8 @@
 
         deleteMembers(ids) {
             if (!ids.length) return Promise.resolve(0);
+            const withActive = ids.filter(memberId => cache.loans.some(l => l.memberId === memberId && l.status === 'معار'));
+            if (withActive.length > 0) return Promise.reject(new Error('لا يمكن حذف أعضاء لديهم إعارات نشطة. يرجى إرجاع الكتب أولاً.'));
             return sb.from('members').delete().in('id', ids).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.members.length;
@@ -302,6 +331,8 @@
         setLoans(loans) { cache.loans = loans.slice(); },
 
         addLoan(loan) {
+            const activeForBook = cache.loans.some(l => l.bookId === loan.bookId && l.status === 'معار');
+            if (activeForBook) return Promise.reject(new Error('الكتاب معار حالياً. لا يمكن إعارته مرتين في نفس الوقت.'));
             const row = {
                 book_id: loan.bookId,
                 member_id: loan.memberId,
@@ -767,14 +798,11 @@
         },
 
         clearAllData() {
-            const emptyUuid = '00000000-0000-0000-0000-000000000000';
-            return sb.from('loans').delete().neq('id', emptyUuid)
-                .then(() => sb.from('books').delete().neq('id', emptyUuid))
-                .then(() => sb.from('members').delete().neq('id', emptyUuid))
-                .then(() => sb.from('diary_entries').delete().neq('id', emptyUuid))
-                .then(() => sb.from('categories').delete().gte('id', 0))
-                .then(() => sb.from('publishers').delete().gte('id', 0))
-                .then(() => {
+            const role = currentUserProfile?.role || 'viewer';
+            if (role !== 'admin') return Promise.reject(new Error('صلاحية المدير فقط.'));
+            return sb.rpc('clear_all_data')
+                .then(({ error }) => {
+                    if (error) return Promise.reject(error);
                     cache.books = [];
                     cache.members = [];
                     cache.loans = [];

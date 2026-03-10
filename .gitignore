@@ -4,12 +4,24 @@ js/config.js
 .env.local
 .env.*.local
 
+# Supabase CLI / local
+supabase/.temp/
+supabase/.branches/
+
 # OS
 .DS_Store
 Thumbs.db
+*.swp
+*~
 
 # Node
 node_modules/
+
+# Temp / build artifacts
+*.tmp
+*.temp
+*.log
+.cache/
 
 # Capacitor build
 www/

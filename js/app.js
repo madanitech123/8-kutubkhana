@@ -451,20 +451,28 @@ const App = {
 
     confirmDeleteBook(bookId) {
         this.showConfirmModal('هل أنت متأكد من حذف هذا الكتاب؟', async () => {
-            await Promise.resolve(DataManager.deleteBook(bookId));
-            this.state.selectedBooks.delete(bookId);
-            this.renderBooks();
-            this.renderDashboard();
+            try {
+                await Promise.resolve(DataManager.deleteBook(bookId));
+                this.state.selectedBooks.delete(bookId);
+                this.renderBooks();
+                this.renderDashboard();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حذف الكتاب.');
+            }
         });
     },
 
     confirmBulkDeleteBooks() {
         const count = this.state.selectedBooks.size;
         this.showConfirmModal(`هل أنت متأكد من حذف ${count} كتاب؟`, async () => {
-            await Promise.resolve(DataManager.deleteBooks(Array.from(this.state.selectedBooks)));
-            this.state.selectedBooks.clear();
-            this.renderBooks();
-            this.renderDashboard();
+            try {
+                await Promise.resolve(DataManager.deleteBooks(Array.from(this.state.selectedBooks)));
+                this.state.selectedBooks.clear();
+                this.renderBooks();
+                this.renderDashboard();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حذف الكتب.');
+            }
         });
     },
 
@@ -548,11 +556,15 @@ const App = {
             e.preventDefault();
             const formData = new FormData(e.target);
             const updatedData = Object.fromEntries(formData);
-            await Promise.resolve(DataManager.updateBook(bookId, updatedData));
-            this.closeModal();
-            this.renderBooks();
-            this.renderDashboard();
-            this.renderReports();
+            try {
+                await Promise.resolve(DataManager.updateBook(bookId, updatedData));
+                this.closeModal();
+                this.renderBooks();
+                this.renderDashboard();
+                this.renderReports();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حفظ التعديلات.');
+            }
         };
 
         this.openModal();
@@ -601,10 +613,14 @@ const App = {
             return;
         }
 
-        await Promise.resolve(DataManager.addBook(book));
-        form.reset();
-        alert('تمت إضافة الكتاب بنجاح!');
-        this.navigateTo('books');
+        try {
+            await Promise.resolve(DataManager.addBook(book));
+            form.reset();
+            alert('تمت إضافة الكتاب بنجاح!');
+            this.navigateTo('books');
+        } catch (err) {
+            alert(err && err.message ? err.message : 'حدث خطأ عند إضافة الكتاب.');
+        }
     },
 
     // ========== CSV IMPORT/EXPORT ==========
@@ -778,11 +794,15 @@ const App = {
             status: 'معار'
         };
 
-        await Promise.resolve(DataManager.addLoan(loan));
-        this.closeLoanModal();
-        this.renderLoans();
-        this.renderDashboard();
-        alert('تمت الإعارة بنجاح!');
+        try {
+            await Promise.resolve(DataManager.addLoan(loan));
+            this.closeLoanModal();
+            this.renderLoans();
+            this.renderDashboard();
+            alert('تمت الإعارة بنجاح!');
+        } catch (err) {
+            alert(err && err.message ? err.message : 'حدث خطأ عند تسجيل الإعارة.');
+        }
     },
 
     async returnLoan(loanId) {
@@ -793,8 +813,12 @@ const App = {
 
     confirmDeleteLoan(loanId) {
         this.showConfirmModal('هل أنت متأكد من حذف هذا السجل؟', async () => {
-            await Promise.resolve(DataManager.deleteLoan(loanId));
-            this.renderLoans();
+            try {
+                await Promise.resolve(DataManager.deleteLoan(loanId));
+                this.renderLoans();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حذف السجل.');
+            }
         });
     },
 
@@ -1047,10 +1071,14 @@ const App = {
             return;
         }
         this.showConfirmModal('هل أنت متأكد من حذف هذا العضو؟', async () => {
-            await Promise.resolve(DataManager.deleteMember(memberId));
-            this.state.selectedMembers.delete(memberId);
-            this.renderMembers();
-            this.renderDashboard();
+            try {
+                await Promise.resolve(DataManager.deleteMember(memberId));
+                this.state.selectedMembers.delete(memberId);
+                this.renderMembers();
+                this.renderDashboard();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حذف العضو.');
+            }
         });
     },
 
@@ -1090,18 +1118,26 @@ const App = {
             alert(`لا يمكن حذف ${withActive.length} عضو/أعضاء لأن لديهم إعارات نشطة. يرجى إرجاع الكتب أولاً.\n\nسيتم حذف ${canDelete.length} عضو فقط.`);
             if (canDelete.length === 0) return;
             this.showConfirmModal(`حذف ${canDelete.length} عضو؟`, async () => {
-                await Promise.resolve(DataManager.deleteMembers(canDelete));
-                this.state.selectedMembers.clear();
-                this.renderMembers();
-                this.renderDashboard();
+                try {
+                    await Promise.resolve(DataManager.deleteMembers(canDelete));
+                    this.state.selectedMembers.clear();
+                    this.renderMembers();
+                    this.renderDashboard();
+                } catch (err) {
+                    alert(err && err.message ? err.message : 'حدث خطأ عند حذف الأعضاء.');
+                }
             });
             return;
         }
         this.showConfirmModal(`هل أنت متأكد من حذف ${ids.length} عضو؟`, async () => {
-            await Promise.resolve(DataManager.deleteMembers(ids));
-            this.state.selectedMembers.clear();
-            this.renderMembers();
-            this.renderDashboard();
+            try {
+                await Promise.resolve(DataManager.deleteMembers(ids));
+                this.state.selectedMembers.clear();
+                this.renderMembers();
+                this.renderDashboard();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حذف الأعضاء.');
+            }
         });
     },
 
@@ -1177,9 +1213,13 @@ const App = {
 
     confirmDeleteCategory(category) {
         this.showConfirmModal(`هل أنت متأكد من حذف القسم "${category}"؟`, async () => {
-            await Promise.resolve(DataManager.deleteCategory(category));
-            this.renderCategories();
-            this.renderDashboard();
+            try {
+                await Promise.resolve(DataManager.deleteCategory(category));
+                this.renderCategories();
+                this.renderDashboard();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حذف القسم.');
+            }
         });
     },
 
@@ -1322,8 +1362,12 @@ const App = {
 
     confirmDeletePublisher(publisher) {
         this.showConfirmModal(`هل أنت متأكد من حذف دار النشر "${publisher}"؟`, async () => {
-            await Promise.resolve(DataManager.deletePublisher(publisher));
-            this.renderPublishers();
+            try {
+                await Promise.resolve(DataManager.deletePublisher(publisher));
+                this.renderPublishers();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند حذف دار النشر.');
+            }
         });
     },
 
@@ -1754,10 +1798,14 @@ const App = {
         // Settings - backup export
         document.getElementById('export-backup-btn').addEventListener('click', () => this.exportBackupExcel());
 
-        // Settings - delete all data
+        // Settings - delete all data (admin only; strong confirmation)
         document.getElementById('delete-all-data-btn').addEventListener('click', () => {
+            if (!this.isAdmin()) {
+                alert('صلاحية المدير فقط.');
+                return;
+            }
             this.showConfirmModal(
-                'هل أنت متأكد من حذف كل البيانات؟ سيتم حذف جميع الكتب والأعضاء والإعارات واليوميات ولا يمكن التراجع.',
+                'حذف كل البيانات نهائياً؟ سيتم حذف جميع الكتب والأعضاء والإعارات واليوميات والأقسام ودور النشر. لا يمكن التراجع عن هذا الإجراء.',
                 () => {
                     Promise.resolve(DataManager.clearAllData())
                         .then(() => {
@@ -1771,7 +1819,7 @@ const App = {
                             this.renderPublishers();
                             alert('تم حذف كل البيانات.');
                         })
-                        .catch(err => alert('حدث خطأ: ' + (err?.message || err)));
+                        .catch(err => alert(err && err.message ? err.message : 'حدث خطأ أثناء الحذف.'));
                 }
             );
         });
