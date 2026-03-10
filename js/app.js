@@ -152,8 +152,9 @@ const App = {
             p.classList.toggle('active', p.id === `${page}-page`);
         });
 
-        // Close mobile menu
+        // Close mobile menu and backdrop
         document.querySelector('.mobile-nav-menu')?.classList.remove('active');
+        document.getElementById('mobile-nav-backdrop')?.classList.remove('active');
 
         // Render page content
         this.renderPage(page);
@@ -1989,9 +1990,18 @@ const App = {
         });
 
         // Mobile menu toggle
+        const mobileMenu = document.querySelector('.mobile-nav-menu');
+        const mobileBackdrop = document.getElementById('mobile-nav-backdrop');
         document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
-            document.querySelector('.mobile-nav-menu').classList.toggle('active');
+            mobileMenu.classList.toggle('active');
+            if (mobileBackdrop) mobileBackdrop.classList.toggle('active', mobileMenu.classList.contains('active'));
         });
+        if (mobileBackdrop) {
+            mobileBackdrop.addEventListener('click', () => {
+                mobileMenu.classList.remove('active');
+                mobileBackdrop.classList.remove('active');
+            });
+        }
 
         // Add book form
         document.getElementById('add-book-form').addEventListener('submit', (e) => this.handleAddBook(e));

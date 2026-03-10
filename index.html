@@ -58,32 +58,23 @@
 
     <!-- Main App Container -->
     <div class="app-container" style="display: none;">
-        <!-- Top Navigation Bar -->
+        <!-- Slim top bar: title + hamburger + search -->
         <header class="top-navbar">
-            <!-- Row 1: App Title -->
+            <button id="mobile-menu-toggle" class="mobile-menu-btn" type="button" aria-label="القائمة">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="navbar-title">
                 <i class="fas fa-book-open"></i>
                 <h1>مكتبة المصباح</h1>
             </div>
+            <button id="global-search-toggle" class="search-toggle-btn" type="button" aria-label="بحث" title="بحث">
+                <i class="fas fa-search"></i>
+            </button>
+        </header>
 
-            <!-- Row 2: Hamburger (one side) | Tag (middle) | Search (other side). Click search = popup. -->
-            <div class="navbar-description">
-                <div class="navbar-desc-side">
-                    <button id="mobile-menu-toggle" class="mobile-menu-btn" type="button" aria-label="القائمة">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                </div>
-                <p class="navbar-tag">نظام متكامل لإدارة المكتبة</p>
-                <div class="navbar-search-wrap">
-                    <button id="global-search-toggle" class="search-toggle-btn" type="button" aria-label="بحث" title="بحث">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Row 3: Navigation -->
-            <div class="navbar-controls">
-                <!-- Desktop Navigation -->
+        <div class="app-body">
+            <!-- Desktop sidebar -->
+            <aside class="sidebar">
                 <nav class="navbar-menu">
                     <ul class="nav-menu">
                         <li class="nav-item active" data-page="dashboard">
@@ -134,7 +125,6 @@
                             <i class="fas fa-cog"></i>
                             <span>الإعدادات</span>
                         </li>
-                        <!-- Logout Button -->
                         <li class="nav-logout">
                             <button id="logout-btn" class="btn-logout" title="تسجيل الخروج">
                                 <i class="fas fa-sign-out-alt"></i>
@@ -143,58 +133,59 @@
                         </li>
                     </ul>
                 </nav>
-            </div>
+            </aside>
 
-            <!-- Mobile Navigation: card grid (native-style) -->
+            <!-- Mobile: sidebar drawer (same nav as list, not cards) -->
+            <div id="mobile-nav-backdrop" class="mobile-nav-backdrop" aria-hidden="true"></div>
             <nav class="mobile-nav-menu">
-                <div class="mobile-nav-grid">
+                <div class="mobile-nav-list">
                     <button type="button" class="mobile-nav-card active" data-page="dashboard">
-                        <span class="mobile-nav-icon"><i class="fas fa-tachometer-alt"></i></span>
-                        <span class="mobile-nav-label">لوحة المعلومات</span>
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>لوحة المعلومات</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="books">
-                        <span class="mobile-nav-icon"><i class="fas fa-list"></i></span>
-                        <span class="mobile-nav-label">قائمة الكتب</span>
+                        <i class="fas fa-list"></i>
+                        <span>قائمة الكتب</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="add-book">
-                        <span class="mobile-nav-icon"><i class="fas fa-plus-circle"></i></span>
-                        <span class="mobile-nav-label">إضافة كتاب</span>
+                        <i class="fas fa-plus-circle"></i>
+                        <span>إضافة كتاب</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="loans">
-                        <span class="mobile-nav-icon"><i class="fas fa-history"></i></span>
-                        <span class="mobile-nav-label">سجل الإعارات</span>
+                        <i class="fas fa-history"></i>
+                        <span>سجل الإعارات</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="diary">
-                        <span class="mobile-nav-icon"><i class="fas fa-clipboard-list"></i></span>
-                        <span class="mobile-nav-label">يوميات المكتبة</span>
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>يوميات المكتبة</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="members">
-                        <span class="mobile-nav-icon"><i class="fas fa-users"></i></span>
-                        <span class="mobile-nav-label">الأعضاء</span>
+                        <i class="fas fa-users"></i>
+                        <span>الأعضاء</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="categories">
-                        <span class="mobile-nav-icon"><i class="fas fa-tags"></i></span>
-                        <span class="mobile-nav-label">الأقسام</span>
+                        <i class="fas fa-tags"></i>
+                        <span>الأقسام</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="authors">
-                        <span class="mobile-nav-icon"><i class="fas fa-user-edit"></i></span>
-                        <span class="mobile-nav-label">المؤلفين</span>
+                        <i class="fas fa-user-edit"></i>
+                        <span>المؤلفين</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="publishers">
-                        <span class="mobile-nav-icon"><i class="fas fa-building"></i></span>
-                        <span class="mobile-nav-label">دور النشر</span>
+                        <i class="fas fa-building"></i>
+                        <span>دور النشر</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="reports">
-                        <span class="mobile-nav-icon"><i class="fas fa-chart-bar"></i></span>
-                        <span class="mobile-nav-label">التقارير</span>
+                        <i class="fas fa-chart-bar"></i>
+                        <span>التقارير</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="archive">
-                        <span class="mobile-nav-icon"><i class="fas fa-archive"></i></span>
-                        <span class="mobile-nav-label">أرشيف الوثائق</span>
+                        <i class="fas fa-archive"></i>
+                        <span>أرشيف الوثائق</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="settings">
-                        <span class="mobile-nav-icon"><i class="fas fa-cog"></i></span>
-                        <span class="mobile-nav-label">الإعدادات</span>
+                        <i class="fas fa-cog"></i>
+                        <span>الإعدادات</span>
                     </button>
                 </div>
                 <div class="mobile-nav-footer">
@@ -204,10 +195,9 @@
                     </button>
                 </div>
             </nav>
-        </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
+            <!-- Main Content -->
+            <main class="main-content">
             <!-- Dashboard Page -->
             <div id="dashboard-page" class="page active">
                 <h1>لوحة المعلومات</h1>
@@ -747,6 +737,7 @@
                 </div>
             </div>
         </main>
+        </div>
     </div>
 
     <!-- Edit Modal -->
