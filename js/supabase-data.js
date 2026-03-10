@@ -363,11 +363,14 @@
         },
 
         deleteLoan(id) {
+            const loan = cache.loans.find(l => l.id === id);
             return sb.from('loans').delete().eq('id', id).then(({ error }) => {
                 if (error) return Promise.reject(error);
-                const len = cache.loans.length;
                 cache.loans = cache.loans.filter(l => l.id !== id);
-                return len !== cache.loans.length;
+                if (loan && loan.status === 'معار') {
+                    return this.updateBook(loan.bookId, { status: 'متاح' }).then(() => true);
+                }
+                return true;
             });
         },
 
