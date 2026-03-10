@@ -1284,21 +1284,27 @@ body {
     font-size: 0.95rem;
 }
 
-.reports-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
+/* Reports page: compact summary + scrollable table area */
+.reports-page .reports-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
 }
 
 .report-stat-card {
     background: var(--card-bg);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--border-light);
-    min-width: 120px;
+    min-width: 0;
     text-align: center;
+    min-height: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .report-stat-card.highlight {
@@ -1307,18 +1313,17 @@ body {
 }
 
 .report-stat-card.small {
-    min-width: 100px;
-    padding: var(--spacing-sm) var(--spacing-md);
+    /* same size as others now */
 }
 
 .report-stat-card.clickable {
     cursor: pointer;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .report-stat-card.clickable:hover {
     box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
 }
 
 .report-stat-card.clickable.active {
@@ -1327,9 +1332,10 @@ body {
 
 .report-stat-value {
     display: block;
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: var(--text-primary);
+    line-height: 1.2;
 }
 
 .report-stat-card.highlight .report-stat-value {
@@ -1338,9 +1344,71 @@ body {
 
 .report-stat-label {
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
-    margin-top: var(--spacing-xs);
+    margin-top: 2px;
+    line-height: 1.2;
+}
+
+.reports-table-wrap {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 320px);
+    min-height: 280px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--card-bg);
+    overflow: hidden;
+}
+
+.reports-page .reports-table-wrap .table-container {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    border-radius: 0;
+    border: none;
+}
+
+.reports-page .reports-table-wrap .pagination {
+    flex-shrink: 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+}
+
+.reports-page .reports-footer {
+    flex-shrink: 0;
+    padding: var(--spacing-xs) var(--spacing-md);
+    margin: 0;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+}
+
+/* Books list page: scrollable table container (same pattern as reports) */
+.books-page .books-table-wrap {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 320px);
+    min-height: 280px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    background: var(--card-bg);
+    overflow: hidden;
+}
+
+.books-page .books-table-wrap .table-container {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    border-radius: 0;
+    border: none;
+}
+
+.books-page .books-table-wrap .pagination {
+    flex-shrink: 0;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-secondary);
 }
 
 .reports-toolbar {
