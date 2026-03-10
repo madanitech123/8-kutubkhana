@@ -164,6 +164,66 @@ kutubkhana/
 - جميع الميزات المذكورة في `plan.md` متوفرة ومفعلة
 - جاهز للاستخدام الفوري!
 
+## 📱 بناء تطبيق أندرويد (APK) – Build Android APK
+
+لتثبيت التطبيق على جهاز Redmi أو أي أندرويد كـ APK:
+
+**المتطلبات:** Node.js مثبت. لبناء الـ APK من الطرفية (`npm run apk`) تحتاج أيضاً إلى **JDK** وضبط **JAVA_HOME** (أو استخدم Android Studio لبناء الـ APK من الواجهة).
+
+**الأوامر من مجلد المشروع:**
+
+1. **نسخ ملفات الويب وتجهيز أندرويد:**
+   ```bash
+   npm run build:android
+   npx cap sync android
+   ```
+
+2. **فتح مشروع أندرويد في Android Studio وبناء APK:**
+   ```bash
+   npx cap open android
+   ```
+   ثم من Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**.  
+   يُنشأ ملف الـ APK في:  
+   `android/app/build/outputs/apk/debug/مكتبة المصباح-debug.apk`  
+   انقله إلى جهازك وثبّته.
+
+3. **أو بناء APK من الطرفية (بدون فتح Android Studio):**  
+   من **جذر المشروع** (الأسهل):
+   ```bash
+   npm run apk
+   ```
+   أو يدوياً:
+   ```bash
+   npm run build:android
+   npx cap sync android
+   cd android
+   .\gradlew.bat assembleDebug
+   ```
+   (على Windows في PowerShell استخدم `.\gradlew.bat`؛ على Mac/Linux استخدم `./gradlew`).  
+   الـ APK الناتج: `android/app/build/outputs/apk/debug/مكتبة المصباح-debug.apk`
+
+**ملخص سريع – أمر واحد يجهّز ويفتح أندرويد:**
+```bash
+npm run android
+```
+(يشغّل build:android ثم cap sync ثم يفتح المشروع في Android Studio؛ بعدها ابنِ الـ APK من القائمة كما في الخطوة 2.)
+
+**إذا ظهر خطأ npm "could not determine executable to run":** نفّذ أولاً من جذر المشروع:
+```bash
+npm install
+```
+ثم أعد المحاولة (`npm run apk` أو `npm run android`).
+
+**إذا ظهر خطأ "JAVA_HOME is not set":** Gradle يحتاج JDK لبناء الـ APK. اختر أحد الخيارين:
+- **الخيار 1 (مُفضّل):** ثبّت [Android Studio](https://developer.android.com/studio) ثم اضبط المتغير للمستخدم:
+  ```powershell
+  [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Android\Android Studio\jbr", "User")
+  ```
+  (أغلق الطرفية وافتحها من جديد ثم نفّذ `npm run apk`.)
+- **الخيار 2:** ثبّت JDK 17 من [Adoptium](https://adoptium.net/) وضَع `JAVA_HOME` على مجلد التثبيت (مثلاً `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot`).
+
+---
+
 ## 🚀 نشر التطبيق على Vercel
 
 1. ارفع المشروع إلى GitHub (إن لم يكن مرفوعاً).
