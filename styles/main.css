@@ -94,6 +94,29 @@ body {
     display: flex;
 }
 
+.app-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-secondary) 100%);
+}
+.app-loading-content {
+    text-align: center;
+    color: var(--text-secondary);
+}
+.app-loading-content i {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-color);
+}
+.app-loading-content p {
+    margin: 0;
+    font-size: 1rem;
+}
+
 .login-container {
     width: 100%;
     max-width: 420px;

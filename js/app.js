@@ -48,14 +48,31 @@ const App = {
 
     // Initialize the application
     init() {
-        this.checkAuth();
         this.bindEvents();
         this.setupBackToTop();
+        this.bindDataReady();
+        this.checkAuth();
+    },
+
+    bindDataReady() {
+        window.addEventListener('datamanager-ready', () => {
+            if (this.state.currentPage && document.querySelector('.app-container')?.style.display === 'flex') {
+                this.renderPage(this.state.currentPage);
+            }
+        });
     },
 
     // ========== AUTHENTICATION ==========
     async checkAuth() {
+        const loadingEl = document.getElementById('app-loading');
+        const loginEl = document.getElementById('login-page');
+        const appEl = document.querySelector('.app-container');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        if (loginEl) loginEl.style.display = 'none';
+        if (appEl) appEl.style.display = 'none';
+
         await DataManager.ensureReady();
+        if (loadingEl) loadingEl.style.display = 'none';
         if (DataManager.isLoggedIn()) {
             this.showApp();
         } else {
@@ -64,6 +81,7 @@ const App = {
     },
 
     showLogin() {
+        document.getElementById('login-page').style.display = '';
         document.getElementById('login-page').classList.add('active');
         document.querySelector('.app-container').style.display = 'none';
         const msgEl = document.getElementById('supabase-required-msg');
@@ -71,6 +89,7 @@ const App = {
     },
 
     showApp() {
+        document.getElementById('login-page').style.display = 'none';
         document.getElementById('login-page').classList.remove('active');
         document.querySelector('.app-container').style.display = 'flex';
         DataManager.ensureReady().then(async () => {

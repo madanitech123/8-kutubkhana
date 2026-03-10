@@ -171,6 +171,21 @@
         if (pubRes.data) cache.publishers = (pubRes.data || []).map(r => r.name);
     }
 
+    function dispatchDataReady() {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('datamanager-ready'));
+        }
+    }
+
+    async function loadDataWhenLoggedIn() {
+        if (!authUser) return;
+        try {
+            await ensureProfile();
+            await fetchAll();
+            dispatchDataReady();
+        } catch (_e) { /* don't block UI */ }
+    }
+
     window.SupabaseDataManager = {
         KEYS: {},
 
@@ -182,10 +197,9 @@
                     sb.auth.onAuthStateChange(async (_event, session) => {
                         authUser = session?.user ?? null;
                         currentUserProfile = null;
-                        if (authUser) await ensureProfile();
+                        await loadDataWhenLoggedIn();
                     });
-                    await ensureProfile();
-                    await fetchAll();
+                    await loadDataWhenLoggedIn();
                 })();
             }
             return readyPromise;

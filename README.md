@@ -1,252 +1,256 @@
-# مكتبة المصباح - Library Management System
+# مكتبة المصباح – Library Management System
 
-نظام إدارة مكتبة تفاعلي كامل مع دعم متعدد اللغات (عربي، بنغالي، إنجليزي، أردو)
+Full-featured library management system with multi-language support (Arabic, Bengali, English, Urdu).
 
-## 📁 هيكل الملفات (File Structure)
+## 📁 File Structure
 
 ```
 kutubkhana/
-├── index.html              # الصفحة الرئيسية
+├── index.html              # Main page
 ├── styles/
-│   └── main.css           # ملف التنسيقات (RTL Support)
+│   └── main.css            # Styles (RTL support)
 ├── js/
-│   ├── data.js            # إدارة البيانات (localStorage)
-│   ├── app.js             # التطبيق الرئيسي والتنقل
-│   ├── books.js           # إدارة الكتب
-│   ├── members.js          # إدارة الأعضاء
-│   ├── loans.js            # إدارة الإعارات
-│   ├── diary.js            # يوميات المكتبة
-│   └── excel.js            # استيراد/تصدير Excel
-├── plan.md                 # خطة المشروع
-└── README.md               # هذا الملف
+│   ├── data.js             # Data layer (localStorage)
+│   ├── app.js              # Main app and navigation
+│   ├── books.js            # Books management
+│   ├── members.js          # Members management
+│   ├── loans.js            # Loans management
+│   ├── diary.js            # Library diary
+│   └── excel.js             # Excel import/export
+├── plan.md                 # Project plan
+└── README.md               # This file
 ```
 
-## 🚀 كيفية الاستخدام
+## 🚀 How to Use
 
-### تشغيل التطبيق محلياً للاختبار (Run locally for testing)
+### Run locally for testing
 
-لتجربة التطبيق على جهازك مع Supabase (تسجيل الدخول، قاعدة البيانات، أرشيف الوثائق) تحتاج إلى تشغيله عبر خادم محلي وليس بفتح الملف مباشرة (فتح `file://` قد يسبب مشاكل مع Supabase في بعض المتصفحات).
+To try the app with Supabase (login, database, document archive) you need to run it via a local server, not by opening the file directly (`file://` can cause issues with Supabase in some browsers).
 
-**الخطوات:**
+**Steps:**
 
-1. **إعداد Supabase (للاختبار مع الخلفية السحابية):**
-   - انسخ `js/config.example.js` إلى `js/config.js`.
-   - افتح `js/config.js` وضَع:
-     - `SUPABASE_URL`: عنوان مشروعك (مثل `https://xxxxx.supabase.co`)
-     - `SUPABASE_ANON_KEY`: المفتاح العام (anon key) من لوحة Supabase → Settings → API.
-   - نفّذ السكربتات في مجلد `supabase/` بالترتيب من لوحة Supabase (SQL Editor). راجع `supabase/FIRST_ADMIN_SETUP.md`.
+1. **Set up Supabase (for testing with cloud backend):**
+   - Copy `js/config.example.js` to `js/config.js`.
+   - Open `js/config.js` and set:
+     - `SUPABASE_URL`: your project URL (e.g. `https://xxxxx.supabase.co`)
+     - `SUPABASE_ANON_KEY`: the anon key from Supabase → Settings → API.
+   - Run the scripts in the `supabase/` folder in order from the Supabase SQL Editor. See `supabase/FIRST_ADMIN_SETUP.md`.
 
-2. **تشغيل خادم محلي:** اختر إحدى الطرق:
+2. **Start a local server** (choose one):
 
-   **أ) باستخدام Node.js (مُفضّل):**
+   **a) Node.js (recommended):**
    ```bash
-   npx serve .
+   npm run serve
    ```
-   ثم افتح في المتصفح: **http://localhost:3000** (أو المنفذ الذي يظهر في الطرفية).
+   Or: `npm run dev`. Then open in the browser: **http://localhost:3000** (or the port shown in the terminal).
 
-   **ب) باستخدام Python:**
+   **b) Python:**
    ```bash
    # Python 3
    python -m http.server 8080
    ```
-   ثم افتح: **http://localhost:8080**
+   Then open: **http://localhost:8080**
 
-   **ج) من VS Code / Cursor:**
-   - ثبّت الامتداد "Live Server" إن لم يكن موجوداً.
-   - انقر يميناً على `index.html` → **Open with Live Server**.
+   **c) VS Code / Cursor:**
+   - Install the "Live Server" extension if needed.
+   - Right-click `index.html` → **Open with Live Server**.
 
-3. **تسجيل الدخول:** في الصفحة الرئيسية استخدم حساب مستخدم أنشأته في Supabase (Authentication → Users)، ثم عيّن المدير الأول من SQL كما في `supabase/FIRST_ADMIN_SETUP.md` إن لزم.
+3. **Log in:** On the main page use a user account you created in Supabase (Authentication → Users), then set the first admin via SQL as in `supabase/FIRST_ADMIN_SETUP.md` if needed.
 
-**ملاحظة:** إذا لم تُعدّ `config.js`، التطبيق يحاول استخدام **localStorage** فقط (واجهة قد تختلف قليلاً حسب الكود الحالي). للاختبار الكامل مع Supabase استخدم `config.js` + خادم محلي.
+**Note:** If you don’t set up `config.js`, the app falls back to **localStorage** only (UI may differ slightly). For full Supabase testing use `config.js` and a local server.
 
 ---
 
-### الطريقة البسيطة (بدون خادم):
-1. افتح ملف `index.html` في أي متصفح حديث (Chrome, Firefox, Edge)
-2. يعمل مباشرة مع **localStorage** (بدون Supabase). لاستخدام Supabase مع تسجيل الدخول والبيانات السحابية، استخدم خادم محلي كما أعلاه.
+### Simple way (no server):
 
-### الميزات المتوفرة:
+1. Open `index.html` in any modern browser (Chrome, Firefox, Edge).
+2. It runs with **localStorage** only (no Supabase). For Supabase login and cloud data, use a local server as above.
+
+### Features
 
 #### 🏠 لوحة المعلومات (Dashboard)
-- إحصائيات شاملة: عدد الكتب، الإعارات النشطة، الأعضاء، دور النشر، المؤلفين
+- Overview: book count, active loans, members, publishers, authors.
 
-#### 📚 إدارة الكتب
-- عرض جميع الكتب في جدول تفاعلي
-- البحث في الكتب (متعدد اللغات)
-- التصفية حسب التصنيف والصندوق
-- إضافة/تعديل/حذف الكتب
-- **استيراد من Excel**: رفع ملف Excel مع قائمة الكتب
-- **تصدير إلى Excel**: تصدير جميع الكتب
-- **تنزيل نموذج Excel**: قالب فارغ جاهز للاستخدام
+#### 📚 إدارة الكتب (Books)
+- View all books in an interactive table.
+- Search (multi-language).
+- Filter by **القسم (Category)** and **الصندوق (Cabinet)**.
+- Add / edit / delete books.
+- **Import from Excel:** upload a book list.
+- **Export to Excel:** export all books.
+- **Download Excel template:** empty template.
 
-#### 👥 إدارة الأعضاء
-- عرض قائمة الأعضاء
-- البحث في الأعضاء
-- إضافة/تعديل/حذف الأعضاء
-- **استيراد من Excel**: رفع قائمة الأعضاء
-- **تنزيل نموذج Excel**: قالب للأعضاء
+#### 👥 إدارة الأعضاء (Members)
+- View member list, search, add / edit / delete.
+- **Import from Excel**, **download member template**.
 
-#### 🔄 إدارة الإعارات
-- عرض الإعارات النشطة
-- إضافة إعارة جديدة
-- إرجاع الكتب
-- تتبع الكتب المستعارة لكل عضو
+#### 🔄 إدارة الإعارات (Loans)
+- View active loans, add new loan, return books, track loans per member.
 
-#### 📓 اليوميات
-- إضافة يوميات المكتبة
-- تصنيفات: ضيف، صيانة، شراء، أخرى
-- إرفاق صور
-- عرض جميع اليوميات مع التاريخ والوقت
+#### 📓 اليوميات (Diary)
+- Add library diary entries.
+- Categories: **ضيف (Guest)**, **صيانة (Maintenance)**, **شراء (Purchase)**, **أخرى (Other)**.
+- Attach images, view all entries with date and time.
 
-#### ⚙️ الإعدادات
-- حذف جميع البيانات
-- تصدير جميع البيانات (JSON)
+#### ⚙️ الإعدادات (Settings)
+- Delete all data, export all data (JSON).
 
-## 💾 تخزين البيانات
+## 💾 Data storage
 
-- **بدون إعداد**: البيانات تُحفظ في **localStorage** في المتصفح (لا حاجة لخادم، يعمل بدون إنترنت).
-- **مع Supabase**: انسخ `js/config.example.js` إلى `js/config.js` وضَع عنوان المشروع والمفتاح العام (anon key). ثم شغّل السكربت SQL الموجود في `supabase/schema.sql` من لوحة Supabase (SQL Editor). بعدها سيتم حفظ الكتب والأعضاء والإعارات واليوميات في Supabase تلقائياً.
+- **No setup:** data is stored in **localStorage** in the browser (no server, works offline).
+- **With Supabase:** copy `js/config.example.js` to `js/config.js` and set your project URL and anon key. Run the SQL in `supabase/schema.sql` from the Supabase SQL Editor. Books, members, loans, and diary are then stored in Supabase.
 
-### أدوار المستخدمين (Profiles & roles)
-- شغّل أيضاً `supabase/migrations/001_profiles_roles.sql` في SQL Editor لإنشاء جدول **profiles** والصلاحيات.
-- الأدوار: **مدير (admin)**، **أمين المكتبة (librarian)**، **مشاهد (viewer)**. المدير فقط يرى صفحة الإعدادات وإدارة المستخدمين.
-- بعد أول تسجيل دخول لأي مستخدم، يتم إنشاء صف له في `profiles` بدور **مشاهد**. لتعيين أول مدير، نفّذ في SQL Editor:
+### User roles (profiles)
+- Also run `supabase/migrations/001_profiles_roles.sql` in the SQL Editor to create **profiles** and roles.
+- Roles: **مدير (admin)**, **أمين المكتبة (librarian)**, **مشاهد (viewer)**. Only **admin** sees Settings and user management.
+- After a user’s first login, a row is created in `profiles` with role **viewer**. To set the first admin, run in SQL Editor:
   ```sql
-  UPDATE profiles SET role = 'admin' WHERE email = 'بريد-المدير@example.com';
+  UPDATE profiles SET role = 'admin' WHERE email = 'your-admin@example.com';
   ```
 
-## 📥 استيراد Excel
+## 📥 Excel import
 
-### نموذج الكتب:
-الحقول **الإلزامية فقط**: اسم الكتاب، المؤلف، القسم، الصندوق. الطاق وباقي الأعمدة اختيارية.
-ترتيب الأعمدة (نفس ترتيب قائمة الكتب): اسم الكتاب، المؤلف، القسم، المحقق، الأجزاء، دار النشر، السنة، النسخ، الحالة، الصندوق، الطاق، ملاحظات. الاستيراد يتعرّف على الأعمدة من أسمائها فلا يشترط الترتيب.
+### Books template
+**Required columns:** book name, author, category, cabinet. Shelf and other columns are optional.  
+Import matches columns by name; order is flexible.
 
-### نموذج الأعضاء:
-الأعمدة المطلوبة:
-1. الاسم
-2. رقم الهاتف
-3. العنوان
-4. تاريخ التسجيل
+### Members template
+Required columns: name, phone, address, registration date.
 
-## 🌐 دعم اللغات
+## 🌐 Language support
 
-- **واجهة التطبيق**: العربية (RTL)
-- **إدخال البيانات**: عربي، بنغالي، إنجليزي، أردو
-- **ملفات Excel**: UTF-8 كامل
+- **UI:** Arabic (RTL).
+- **Data entry:** Arabic, Bengali, English, Urdu.
+- **Excel files:** full UTF-8.
 
-## 🎨 التصميم
+## 🎨 Design
 
-- تصميم عصري وجذاب
-- دعم RTL كامل (من اليمين لليسار)
-- متجاوب مع جميع الشاشات
-- ألوان هادئة ومريحة للعين
+- Modern layout, full RTL, responsive, easy-on-the-eyes colors.
 
-## 📋 البيانات التجريبية
+## 📋 Sample data
 
-التطبيق يأتي مع بيانات تجريبية:
-- 3 كتب مثال
-- 2 عضو مثال
+The app ships with sample data: 3 sample books, 2 sample members. You can remove it from Settings or add your own.
 
-يمكنك حذفها من الإعدادات أو إضافة بياناتك الخاصة.
+## 🔧 Tech stack
 
-## 🔧 التقنيات المستخدمة
+- **HTML5**, **CSS3**, **JavaScript (Vanilla)**, **SheetJS (XLSX)**, **localStorage**.
 
-- **HTML5**: البنية الأساسية
-- **CSS3**: التنسيقات والتصميم
-- **JavaScript (Vanilla)**: الوظائف التفاعلية
-- **SheetJS (XLSX)**: قراءة وكتابة ملفات Excel
-- **localStorage**: تخزين البيانات محلياً
+## 📝 Notes
 
-## 📝 ملاحظات
+- Full working prototype; supports **localStorage** and **Supabase**; all features in `plan.md` are implemented and ready to use.
 
-- هذا بروتوتايب تفاعلي كامل
-- يدعم **localStorage** و **Supabase** كخلفية للبيانات
-- جميع الميزات المذكورة في `plan.md` متوفرة ومفعلة
-- جاهز للاستخدام الفوري!
+## 📱 Build Android APK
 
-## 📱 بناء تطبيق أندرويد (APK) – Build Android APK
+To install the app on a Redmi or any Android device as an APK:
 
-لتثبيت التطبيق على جهاز Redmi أو أي أندرويد كـ APK:
+**Requirements:** Node.js installed. For building the APK from the terminal (`npm run apk`) you also need a **JDK** and **JAVA_HOME** set (or use Android Studio to build the APK from the UI).
 
-**المتطلبات:** Node.js مثبت. لبناء الـ APK من الطرفية (`npm run apk`) تحتاج أيضاً إلى **JDK** وضبط **JAVA_HOME** (أو استخدم Android Studio لبناء الـ APK من الواجهة).
+**From the project root:**
 
-**الأوامر من مجلد المشروع:**
-
-1. **نسخ ملفات الويب وتجهيز أندرويد:**
+1. **Copy web assets and prepare Android:**
    ```bash
    npm run build:android
    npx cap sync android
    ```
 
-2. **فتح مشروع أندرويد في Android Studio وبناء APK:**
+2. **Open the Android project in Android Studio and build APK:**
    ```bash
    npx cap open android
    ```
-   ثم من Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**.  
-   يُنشأ ملف الـ APK في:  
+   Then in Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**.  
+   The APK is created at:  
    `android/app/build/outputs/apk/debug/مكتبة المصباح-debug.apk`  
-   انقله إلى جهازك وثبّته.
+   Copy it to your device and install.
 
-3. **أو بناء APK من الطرفية (بدون فتح Android Studio):**  
-   من **جذر المشروع** (الأسهل):
+3. **Or build APK from the terminal (without Android Studio):**  
+   From the **project root** (easiest):
    ```bash
    npm run apk
    ```
-   أو يدوياً:
+   Or manually:
    ```bash
    npm run build:android
    npx cap sync android
    cd android
    .\gradlew.bat assembleDebug
    ```
-   (على Windows في PowerShell استخدم `.\gradlew.bat`؛ على Mac/Linux استخدم `./gradlew`).  
-   الـ APK الناتج: `android/app/build/outputs/apk/debug/مكتبة المصباح-debug.apk`
+   (On Windows in PowerShell use `.\gradlew.bat`; on Mac/Linux use `./gradlew`.)  
+   Output APK: `android/app/build/outputs/apk/debug/مكتبة المصباح-debug.apk`
 
-**ملخص سريع – أمر واحد يجهّز ويفتح أندرويد:**
+**Quick: one command to prepare and open Android:**
 ```bash
 npm run android
 ```
-(يشغّل build:android ثم cap sync ثم يفتح المشروع في Android Studio؛ بعدها ابنِ الـ APK من القائمة كما في الخطوة 2.)
+(Runs build:android, cap sync, then opens the project in Android Studio; then build the APK from the menu as in step 2.)
 
-**إذا ظهر خطأ npm "could not determine executable to run":** نفّذ أولاً من جذر المشروع:
+**If you see npm error "could not determine executable to run":** From the project root run:
 ```bash
 npm install
 ```
-ثم أعد المحاولة (`npm run apk` أو `npm run android`).
+Then try again (`npm run apk` or `npm run android`).
 
-**إذا ظهر خطأ "JAVA_HOME is not set":** Gradle يحتاج JDK لبناء الـ APK. اختر أحد الخيارين:
-- **الخيار 1 (مُفضّل):** ثبّت [Android Studio](https://developer.android.com/studio) ثم اضبط المتغير للمستخدم:
+**If you see "JAVA_HOME is not set":** Gradle needs a JDK to build the APK. Choose one:
+- **Option 1 (recommended):** Install [Android Studio](https://developer.android.com/studio), then set the variable for your user:
   ```powershell
   [System.Environment]::SetEnvironmentVariable("JAVA_HOME", "C:\Program Files\Android\Android Studio\jbr", "User")
   ```
-  (أغلق الطرفية وافتحها من جديد ثم نفّذ `npm run apk`.)
-- **الخيار 2:** ثبّت JDK 17 من [Adoptium](https://adoptium.net/) وضَع `JAVA_HOME` على مجلد التثبيت (مثلاً `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot`).
+  (Close and reopen the terminal, then run `npm run apk`.)
+- **Option 2:** Install JDK 17 from [Adoptium](https://adoptium.net/) and set `JAVA_HOME` to the install folder (e.g. `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot`).
 
 ---
 
-## 🚀 نشر التطبيق على Vercel
+## 🚀 Deploy on Vercel
 
-1. ارفع المشروع إلى GitHub (إن لم يكن مرفوعاً).
-2. ادخل إلى [vercel.com](https://vercel.com) وسجّل الدخول، ثم **Add New Project** واختر المستودع.
-3. **إعداد متغيرات البيئة** (كي يعمل Supabase بعد النشر):
-   - في إعدادات المشروع: **Settings → Environment Variables**
-   - أضف:
+1. Push the project to GitHub (if not already).
+2. Go to [vercel.com](https://vercel.com), sign in, then **Add New Project** and select the repo.
+3. **Environment variables** (so Supabase works after deploy):
+   - In project settings: **Settings → Environment Variables**
+   - Add:
      - `SUPABASE_URL` = `https://YOUR_PROJECT_REF.supabase.co`
-     - `SUPABASE_ANON_KEY` = المفتاح العام (anon key) من لوحة Supabase
-4. اضغط **Deploy**.  
-   عند البناء يتم إنشاء `js/config.js` من المتغيرات أعلاه، فيعمل التطبيق مع Supabase على الرابط المنشور.
+     - `SUPABASE_ANON_KEY` = your anon key from the Supabase dashboard
+4. Click **Deploy**.  
+   The build creates `js/config.js` from these variables so the app works with Supabase on the deployed URL.
 
-بدون تعبئة هذه المتغيرات سيعمل التطبيق على Vercel باستخدام **localStorage** فقط (البيانات محلية في المتصفح).
+Without these variables, the app on Vercel will use **localStorage** only (data stays in the browser).
 
-## 🎯 الخطوات التالية (للمستقبل)
+## 🎯 Next steps (future)
 
-1. إضافة نظام مصادقة المستخدمين (Supabase Auth)
-3. رفع الصور إلى Supabase Storage
-4. إضافة المزيد من التقارير والإحصائيات
-5. إضافة إشعارات للمواعيد
+1. Supabase Auth
+2. Upload images to Supabase Storage
+3. More reports and stats
+4. Notifications for due dates
 
----
+## 🗂️ App names (Arabic UI labels)
 
-**تم التطوير بواسطة**: مكتبة المصباح  
-**الإصدار**: 1.0.0 (Prototype)
+- **القسم (Category)** examples: **خطابات**, **عقود**, **صور قديمة**, **مخطوطات**, **أخرى**
+- **الحالة (Status)** examples: **متاح (Available)**, **معار (Issued)**
+
+
+
+Build & run locally
+
+- Development server (simple static server):
+  ```bash
+  npm run serve
+  ```
+  Or: `npm run dev`.
+- Or Python:
+  ```bash
+  python -m http.server 8080
+  ```
+
+### Build Android APK
+
+
+- Manual steps:
+  ```bash
+  npm run build:android
+  npx cap sync android
+  
+- Using Android Studio:
+  ```bash
+  npm run android
+  ```
+  Then in Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+
 

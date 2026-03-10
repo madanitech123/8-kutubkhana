@@ -4,6 +4,8 @@
   "private": true,
   "description": "مكتبة المصباح - نظام إدارة المكتبة",
   "scripts": {
+    "serve": "npx serve .",
+    "dev": "npx serve .",
     "build": "node scripts/build-config.js",
     "build:android": "node scripts/build-android.js",
     "cap:sync": "npx cap sync android",

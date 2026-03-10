@@ -12,8 +12,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-    <!-- Login Page -->
-    <div id="login-page" class="login-page active">
+    <!-- Loading: visible from first paint until auth is decided (no login blink) -->
+    <div id="app-loading" class="app-loading" aria-hidden="true">
+        <div class="app-loading-content">
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            <p>جاري التحميل...</p>
+        </div>
+    </div>
+
+    <!-- Login Page (hidden until we know user is not logged in) -->
+    <div id="login-page" class="login-page">
         <div class="login-container">
             <h1><i class="fas fa-book-open"></i> مكتبة المصباح</h1>
             <p id="supabase-required-msg" class="supabase-required-msg" style="display: none; margin: 0 0 1rem; padding: 0.75rem; background: #fff3cd; color: #856404; border-radius: 8px; font-size: 0.9rem;">يرجى إعداد Supabase: انسخ <code>js/config.example.js</code> إلى <code>js/config.js</code> وأدخل مفاتيح المشروع.</p>
