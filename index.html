@@ -118,6 +118,10 @@
                             <i class="fas fa-chart-bar"></i>
                             <span>التقارير</span>
                         </li>
+                        <li class="nav-item" data-page="archive">
+                            <i class="fas fa-archive"></i>
+                            <span>أرشيف الوثائق</span>
+                        </li>
                         <li class="nav-item" data-page="settings">
                             <i class="fas fa-cog"></i>
                             <span>الإعدادات</span>
@@ -175,6 +179,10 @@
                     <button type="button" class="mobile-nav-card" data-page="reports">
                         <span class="mobile-nav-icon"><i class="fas fa-chart-bar"></i></span>
                         <span class="mobile-nav-label">التقارير</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="archive">
+                        <span class="mobile-nav-icon"><i class="fas fa-archive"></i></span>
+                        <span class="mobile-nav-label">أرشيف الوثائق</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="settings">
                         <span class="mobile-nav-icon"><i class="fas fa-cog"></i></span>
@@ -640,6 +648,29 @@
                     </button>
                 </div>
                 <p class="reports-footer" id="reports-footer"></p>
+            </div>
+
+            <!-- Document Archive Page -->
+            <div id="archive-page" class="page">
+                <h1><i class="fas fa-archive"></i> أرشيف الوثائق</h1>
+                <p class="archive-desc">حفظ وعرض صور المستندات والأوراق مع ربط اختياري بكتاب.</p>
+                <div class="page-header">
+                    <input type="text" id="archive-search" class="filter-input" placeholder="بحث بالعنوان أو الوصف..." style="max-width: 280px;">
+                    <select id="archive-category-filter" style="max-width: 160px;">
+                        <option value="">كل الأقسام</option>
+                        <option value="خطابات">خطابات</option>
+                        <option value="عقود">عقود</option>
+                        <option value="صور قديمة">صور قديمة</option>
+                        <option value="مخطوطات">مخطوطات</option>
+                        <option value="أخرى">أخرى</option>
+                    </select>
+                    <button type="button" class="btn btn-primary" id="archive-add-btn" data-require-role="edit">
+                        <i class="fas fa-plus"></i> إضافة وثيقة
+                    </button>
+                </div>
+                <div id="archive-list" class="archive-list">
+                    <!-- Filled by JS -->
+                </div>
             </div>
 
             <!-- Settings Page -->

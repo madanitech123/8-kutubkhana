@@ -23,9 +23,47 @@ kutubkhana/
 
 ## 🚀 كيفية الاستخدام
 
-### الطريقة البسيطة:
+### تشغيل التطبيق محلياً للاختبار (Run locally for testing)
+
+لتجربة التطبيق على جهازك مع Supabase (تسجيل الدخول، قاعدة البيانات، أرشيف الوثائق) تحتاج إلى تشغيله عبر خادم محلي وليس بفتح الملف مباشرة (فتح `file://` قد يسبب مشاكل مع Supabase في بعض المتصفحات).
+
+**الخطوات:**
+
+1. **إعداد Supabase (للاختبار مع الخلفية السحابية):**
+   - انسخ `js/config.example.js` إلى `js/config.js`.
+   - افتح `js/config.js` وضَع:
+     - `SUPABASE_URL`: عنوان مشروعك (مثل `https://xxxxx.supabase.co`)
+     - `SUPABASE_ANON_KEY`: المفتاح العام (anon key) من لوحة Supabase → Settings → API.
+   - نفّذ السكربتات في مجلد `supabase/` بالترتيب من لوحة Supabase (SQL Editor). راجع `supabase/FIRST_ADMIN_SETUP.md`.
+
+2. **تشغيل خادم محلي:** اختر إحدى الطرق:
+
+   **أ) باستخدام Node.js (مُفضّل):**
+   ```bash
+   npx serve .
+   ```
+   ثم افتح في المتصفح: **http://localhost:3000** (أو المنفذ الذي يظهر في الطرفية).
+
+   **ب) باستخدام Python:**
+   ```bash
+   # Python 3
+   python -m http.server 8080
+   ```
+   ثم افتح: **http://localhost:8080**
+
+   **ج) من VS Code / Cursor:**
+   - ثبّت الامتداد "Live Server" إن لم يكن موجوداً.
+   - انقر يميناً على `index.html` → **Open with Live Server**.
+
+3. **تسجيل الدخول:** في الصفحة الرئيسية استخدم حساب مستخدم أنشأته في Supabase (Authentication → Users)، ثم عيّن المدير الأول من SQL كما في `supabase/FIRST_ADMIN_SETUP.md` إن لزم.
+
+**ملاحظة:** إذا لم تُعدّ `config.js`، التطبيق يحاول استخدام **localStorage** فقط (واجهة قد تختلف قليلاً حسب الكود الحالي). للاختبار الكامل مع Supabase استخدم `config.js` + خادم محلي.
+
+---
+
+### الطريقة البسيطة (بدون خادم):
 1. افتح ملف `index.html` في أي متصفح حديث (Chrome, Firefox, Edge)
-2. لا حاجة لتثبيت أي شيء - كل شيء يعمل مباشرة!
+2. يعمل مباشرة مع **localStorage** (بدون Supabase). لاستخدام Supabase مع تسجيل الدخول والبيانات السحابية، استخدم خادم محلي كما أعلاه.
 
 ### الميزات المتوفرة:
 

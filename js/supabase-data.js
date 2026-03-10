@@ -70,9 +70,12 @@
         members: [],
         loans: [],
         diary: [],
+        documents: [],
         categories: [],
         publishers: []
     };
+
+    const DOCUMENT_ARCHIVE_BUCKET = 'document-archive';
 
     let readyPromise = null;
     let authUser = null;
@@ -131,19 +134,39 @@
         return all;
     }
 
+    function mapDocument(row) {
+        if (!row) return null;
+        const paths = row.file_paths;
+        return {
+            id: row.id,
+            title: row.title || '',
+            description: row.description || '',
+            category: row.category || 'أخرى',
+            documentDate: row.document_date,
+            bookId: row.book_id || null,
+            filePaths: Array.isArray(paths) ? paths : (paths ? JSON.parse(paths) : []),
+            createdAt: row.created_at,
+            updatedAt: row.updated_at
+        };
+    }
+
     async function fetchAll() {
-        const [booksRows, membersRows, loansRows, diaryRows, catRes, pubRes] = await Promise.all([
+        const [booksRows, membersRows, loansRows, diaryRows, catRes, pubRes, docsRes] = await Promise.all([
             fetchAllFromTable('books', 'created_at', false),
             fetchAllFromTable('members', 'created_at', false),
             fetchAllFromTable('loans', 'created_at', false),
             fetchAllFromTable('diary_entries', 'created_at', false),
             sb.from('categories').select('name').order('name'),
-            sb.from('publishers').select('name').order('name')
+            sb.from('publishers').select('name').order('name'),
+            sb.from('documents').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+                if (error) return []; return data || [];
+            })
         ]);
         cache.books = booksRows.map(mapBook);
         cache.members = membersRows.map(mapMember);
         cache.loans = loansRows.map(mapLoan);
         cache.diary = diaryRows.map(mapDiary);
+        cache.documents = (docsRes || []).map(mapDocument);
         if (catRes.data) cache.categories = (catRes.data || []).map(r => r.name);
         if (pubRes.data) cache.publishers = (pubRes.data || []).map(r => r.name);
     }
@@ -170,6 +193,16 @@
 
         getCurrentUserRole() {
             return currentUserProfile?.role || 'viewer';
+        },
+
+        /** Refetch current user's profile from DB (e.g. after role changed in Supabase). */
+        async refreshProfile() {
+            if (!authUser) return;
+            const uid = authUser.id;
+            const { data } = await sb.from('profiles').select('*').eq('user_id', uid).maybeSingle();
+            if (data) {
+                currentUserProfile = { user_id: data.user_id, email: data.email || '', role: data.role || 'viewer', display_name: data.display_name || '' };
+            }
         },
 
         getProfile() {
@@ -428,6 +461,82 @@
                 grouped[d].push(entry);
             });
             return grouped;
+        },
+
+        getDocuments() { return cache.documents.slice(); },
+        getDocumentById(id) { return cache.documents.find(d => d.id === id) || null; },
+        getDocumentsByBookId(bookId) { return cache.documents.filter(d => d.bookId === bookId); },
+
+        async getDocumentSignedUrl(path) {
+            const { data, error } = await sb.storage.from(DOCUMENT_ARCHIVE_BUCKET).createSignedUrl(path, 3600);
+            if (error) return null;
+            return data?.signedUrl || null;
+        },
+
+        async addDocument(doc, files) {
+            const row = {
+                title: (doc.title || '').trim(),
+                description: (doc.description || '').trim() || '',
+                category: (doc.category || '').trim() || 'أخرى',
+                document_date: doc.documentDate || null,
+                book_id: doc.bookId || null,
+                file_paths: []
+            };
+            if (!row.title) return Promise.reject(new Error('عنوان الوثيقة مطلوب'));
+            const { data: inserted, error: insertErr } = await sb.from('documents').insert(row).select('id, created_at').single();
+            if (insertErr) return Promise.reject(insertErr);
+            const id = inserted.id;
+            const paths = [];
+            if (files && files.length) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const ext = (file.name && file.name.split('.').pop()) || 'jpg';
+                    const storagePath = `${id}/${Date.now()}-${i}.${ext}`;
+                    const { error: uploadErr } = await sb.storage.from(DOCUMENT_ARCHIVE_BUCKET).upload(storagePath, file, { upsert: true });
+                    if (!uploadErr) paths.push(storagePath);
+                }
+                await sb.from('documents').update({ file_paths: paths, updated_at: new Date().toISOString() }).eq('id', id);
+            }
+            const out = mapDocument({
+                id, ...row, file_paths: paths,
+                created_at: inserted.created_at,
+                updated_at: new Date().toISOString()
+            });
+            cache.documents.unshift(out);
+            return out;
+        },
+
+        updateDocument(id, data) {
+            const obj = {
+                title: data.title,
+                description: data.description,
+                category: data.category,
+                document_date: data.documentDate,
+                book_id: data.bookId,
+                updated_at: new Date().toISOString()
+            };
+            Object.keys(obj).forEach(k => obj[k] === undefined && delete obj[k]);
+            if (obj.title !== undefined) obj.title = (obj.title || '').trim();
+            if (!obj.title && data.title !== undefined) return Promise.reject(new Error('عنوان الوثيقة مطلوب'));
+            return sb.from('documents').update(obj).eq('id', id).select().single()
+                .then(({ data: row, error }) => {
+                    if (error) return Promise.reject(error);
+                    const idx = cache.documents.findIndex(d => d.id === id);
+                    const mapped = mapDocument(row);
+                    if (idx !== -1) cache.documents[idx] = mapped;
+                    return mapped;
+                });
+        },
+
+        async deleteDocument(id) {
+            const doc = cache.documents.find(d => d.id === id);
+            if (doc && doc.filePaths && doc.filePaths.length) {
+                await sb.storage.from(DOCUMENT_ARCHIVE_BUCKET).remove(doc.filePaths);
+            }
+            const { error } = await sb.from('documents').delete().eq('id', id);
+            if (error) return Promise.reject(error);
+            cache.documents = cache.documents.filter(d => d.id !== id);
+            return true;
         },
 
         getCategories() { return cache.categories.slice(); },

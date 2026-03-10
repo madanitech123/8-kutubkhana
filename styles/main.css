@@ -1802,3 +1802,114 @@ body {
 .book-name-highlight:hover {
     text-decoration: underline;
 }
+
+/* === Document Archive === */
+.archive-desc {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    font-size: 0.95rem;
+}
+
+.archive-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.archive-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-light);
+}
+
+.archive-card-title {
+    font-size: 1.05rem;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+}
+
+.archive-card-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.archive-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-sm);
+}
+
+.archive-meta-tag {
+    background: var(--primary-lighter);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.archive-card .item-actions {
+    margin-top: var(--spacing-sm);
+}
+
+.document-view-meta {
+    margin-bottom: var(--spacing-md);
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.document-view-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.document-preview-img {
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+}
+
+.document-file-link {
+    display: inline-block;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--primary-light);
+    color: var(--primary-color);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+}
+
+.document-file-link:hover {
+    background: var(--primary-lighter);
+}
+
+.linked-docs-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.linked-docs-list li {
+    margin-bottom: var(--spacing-xs);
+}
+
+.linked-docs-list .btn-link {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    font-size: inherit;
+}
+
+.linked-docs-list .btn-link:hover {
+    color: var(--primary-hover);
+}

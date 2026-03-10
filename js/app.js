@@ -73,7 +73,8 @@ const App = {
     showApp() {
         document.getElementById('login-page').classList.remove('active');
         document.querySelector('.app-container').style.display = 'flex';
-        DataManager.ensureReady().then(() => {
+        DataManager.ensureReady().then(async () => {
+            if (DataManager.refreshProfile) await DataManager.refreshProfile();
             this.state.userRole = DataManager.getCurrentUserRole ? DataManager.getCurrentUserRole() : 'viewer';
             this.updateNavForRole();
             this.navigateTo('dashboard');
@@ -175,6 +176,9 @@ const App = {
                 break;
             case 'reports':
                 this.renderReports();
+                break;
+            case 'archive':
+                this.renderArchive();
                 break;
             case 'settings':
                 this.renderSettings();
@@ -545,6 +549,11 @@ const App = {
                     <label>ملاحظات</label>
                     <textarea name="notes" rows="2">${book.notes || ''}</textarea>
                 </div>
+                ${(() => {
+                    const linked = DataManager.getDocumentsByBookId ? DataManager.getDocumentsByBookId(bookId) : [];
+                    if (!linked.length) return '';
+                    return `<div class="form-group"><label>الوثائق المرتبطة</label><ul class="linked-docs-list">${linked.map(d => `<li><button type="button" class="btn-link" onclick="App.closeModal(); App.navigateTo('archive'); setTimeout(function(){ App.openViewDocument('${d.id}'); }, 300);">${(d.title || 'وثيقة').replace(/</g, '&lt;')}</button></li>`).join('')}</ul></div>`;
+                })()}
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
                     <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
@@ -1144,20 +1153,25 @@ const App = {
     // ========== CATEGORIES ==========
     renderCategories() {
         const categories = DataManager.getCategories();
+        const books = DataManager.getBooks();
         const container = document.getElementById('categories-list');
 
         const showEdit = this.canEdit();
-        container.innerHTML = categories.map((category, index) => `
+        container.innerHTML = categories.map((category, index) => {
+            const count = books.filter(b => (b.category || '').trim() === category).length;
+            return `
             <div class="item-card">
                 <div class="item-info">
                     <span class="item-number">${index + 1}</span>
                     <div class="item-details">
-                        <h4>${category}</h4>
+                        <h4>${category.replace(/</g, '&lt;')}</h4>
+                        <p class="item-meta">${count} كتب</p>
                     </div>
                 </div>
                 ${showEdit ? `<div class="item-actions"><button class="btn btn-sm btn-edit" onclick="App.editCategory('${category.replace(/'/g, "\\'")}')" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-delete" onclick="App.confirmDeleteCategory('${category.replace(/'/g, "\\'")}')" title="حذف"><i class="fas fa-trash"></i></button></div>` : ''}
             </div>
-        `).join('');
+        `;
+        }).join('');
     },
 
     async handleAddCategory() {
@@ -1294,20 +1308,25 @@ const App = {
     // ========== PUBLISHERS ==========
     renderPublishers() {
         const publishers = DataManager.getPublishers();
+        const books = DataManager.getBooks();
         const container = document.getElementById('publishers-list');
 
         const showEdit = this.canEdit();
-        container.innerHTML = publishers.map((publisher, index) => `
+        container.innerHTML = publishers.map((publisher, index) => {
+            const count = books.filter(b => (b.publisher || '').trim() === publisher).length;
+            return `
             <div class="item-card">
                 <div class="item-info">
                     <span class="item-number">${index + 1}</span>
                     <div class="item-details">
                         <h4>${publisher.replace(/</g, '&lt;')}</h4>
+                        <p class="item-meta">${count} كتب</p>
                     </div>
                 </div>
                 ${showEdit ? `<div class="item-actions"><button class="btn btn-sm btn-edit" onclick="App.editPublisher('${publisher.replace(/'/g, "\\'")}')" title="تعديل"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-delete" onclick="App.confirmDeletePublisher('${publisher.replace(/'/g, "\\'")}')" title="حذف"><i class="fas fa-trash"></i></button></div>` : ''}
             </div>
-        `).join('');
+        `;
+        }).join('');
     },
 
     async handleAddPublisher() {
@@ -1379,6 +1398,224 @@ const App = {
         } else {
             alert('جميع دور النشر الموجودة في الكتب مسجلة مسبقاً في القائمة.');
         }
+    },
+
+    // ========== DOCUMENT ARCHIVE ==========
+    renderArchive() {
+        const listEl = document.getElementById('archive-list');
+        if (!listEl) return;
+        const search = (document.getElementById('archive-search') && document.getElementById('archive-search').value) || '';
+        const catFilter = (document.getElementById('archive-category-filter') && document.getElementById('archive-category-filter').value) || '';
+        let docs = DataManager.getDocuments();
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            docs = docs.filter(d => (d.title || '').toLowerCase().includes(q) || (d.description || '').toLowerCase().includes(q));
+        }
+        if (catFilter) docs = docs.filter(d => (d.category || '') === catFilter);
+        const showEdit = this.canEdit();
+        const books = DataManager.getBooks();
+        const bookName = (id) => { const b = books.find(x => x.id === id); return b ? (b.name || '') : ''; };
+        if (docs.length === 0) {
+            listEl.innerHTML = '<div class="empty-state"><i class="fas fa-archive"></i><p>لا توجد وثائق.</p><p class="text-muted">اضغط "إضافة وثيقة" لحفظ صور المستندات والأوراق.</p></div>';
+            return;
+        }
+        listEl.innerHTML = docs.map(d => {
+            const linked = d.bookId ? bookName(d.bookId) : '';
+            const dateStr = d.documentDate ? new Date(d.documentDate).toLocaleDateString('ar-SA') : '';
+            const actions = showEdit
+                ? `<span class="item-actions"><button type="button" class="btn btn-sm btn-edit" onclick="App.openViewDocument('${d.id}')" title="عرض"><i class="fas fa-eye"></i></button><button type="button" class="btn btn-sm btn-edit" onclick="App.openEditDocument('${d.id}')" title="تعديل"><i class="fas fa-edit"></i></button><button type="button" class="btn btn-sm btn-delete" onclick="App.confirmDeleteDocument('${d.id}')" title="حذف"><i class="fas fa-trash"></i></button></span>`
+                : `<span class="item-actions"><button type="button" class="btn btn-sm btn-edit" onclick="App.openViewDocument('${d.id}')" title="عرض"><i class="fas fa-eye"></i></button></span>`;
+            return `<div class="archive-card item-card" data-doc-id="${d.id}">
+                <div class="archive-card-body">
+                    <h3 class="archive-card-title">${(d.title || '').replace(/</g, '&lt;')}</h3>
+                    ${d.description ? `<p class="archive-card-desc">${(d.description || '').slice(0, 120).replace(/</g, '&lt;')}${(d.description || '').length > 120 ? '...' : ''}</p>` : ''}
+                    <div class="archive-card-meta">
+                        <span class="archive-meta-tag">${(d.category || 'أخرى').replace(/</g, '&lt;')}</span>
+                        ${dateStr ? `<span>${dateStr}</span>` : ''}
+                        ${linked ? `<span><i class="fas fa-book"></i> ${linked.replace(/</g, '&lt;')}</span>` : ''}
+                        <span>${(d.filePaths || []).length} ملف</span>
+                    </div>
+                    ${actions}
+                </div>
+            </div>`;
+        }).join('');
+    },
+
+    openAddDocument() {
+        const books = DataManager.getBooks();
+        const bookOptions = '<option value="">لا يوجد</option>' + books.map(b => `<option value="${b.id}">${(b.name || '').replace(/</g, '&lt;')}</option>`).join('');
+        const modalBody = document.getElementById('modal-body');
+        document.getElementById('modal-title').textContent = 'إضافة وثيقة';
+        modalBody.innerHTML = `
+            <form id="add-document-form">
+                <div class="form-group">
+                    <label>عنوان الوثيقة <span class="required">*</span></label>
+                    <input type="text" name="title" required placeholder="مثال: خطاب قديم">
+                </div>
+                <div class="form-group">
+                    <label>الوصف</label>
+                    <textarea name="description" rows="2" placeholder="وصف مختصر للبحث لاحقاً"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>القسم</label>
+                    <select name="category">
+                        <option value="أخرى">أخرى</option>
+                        <option value="خطابات">خطابات</option>
+                        <option value="عقود">عقود</option>
+                        <option value="صور قديمة">صور قديمة</option>
+                        <option value="مخطوطات">مخطوطات</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الوثيقة (اختياري)</label>
+                    <input type="date" name="documentDate">
+                </div>
+                <div class="form-group">
+                    <label>ربط بكتاب (اختياري)</label>
+                    <select name="bookId">${bookOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label>صور/ملفات الوثيقة</label>
+                    <input type="file" name="files" accept="image/*,.pdf" multiple>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>`;
+        document.getElementById('add-document-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            const files = form.querySelector('input[name="files"]').files;
+            const doc = {
+                title: fd.get('title'),
+                description: fd.get('description') || '',
+                category: fd.get('category') || 'أخرى',
+                documentDate: fd.get('documentDate') || null,
+                bookId: fd.get('bookId') || null
+            };
+            try {
+                await DataManager.addDocument(doc, files && files.length ? Array.from(files) : []);
+                this.closeModal();
+                this.renderArchive();
+                alert('تمت إضافة الوثيقة.');
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند الإضافة.');
+            }
+        };
+        this.openModal();
+    },
+
+    async openViewDocument(id) {
+        const doc = DataManager.getDocumentById(id);
+        if (!doc) return;
+        const books = DataManager.getBooks();
+        const bookName = doc.bookId ? (books.find(b => b.id === doc.bookId) || {}).name : '';
+        const dateStr = doc.documentDate ? new Date(doc.documentDate).toLocaleDateString('ar-SA') : '';
+        const modalBody = document.getElementById('modal-body');
+        document.getElementById('modal-title').textContent = (doc.title || 'وثيقة').replace(/</g, '&lt;');
+        let imgsHtml = '<p class="text-muted">جاري تحميل الصور...</p>';
+        modalBody.innerHTML = `
+            <div class="document-view-meta">
+                ${doc.description ? `<p>${(doc.description || '').replace(/</g, '&lt;')}</p>` : ''}
+                <p><strong>القسم:</strong> ${(doc.category || 'أخرى').replace(/</g, '&lt;')} ${dateStr ? ' | <strong>التاريخ:</strong> ' + dateStr : ''} ${bookName ? ' | <strong>الكتاب:</strong> ' + bookName.replace(/</g, '&lt;') : ''}</p>
+            </div>
+            <div id="document-view-files" class="document-view-files">${imgsHtml}</div>
+            <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="App.closeModal()">إغلاق</button></div>`;
+        const container = document.getElementById('document-view-files');
+        if (doc.filePaths && doc.filePaths.length) {
+            const parts = [];
+            for (const path of doc.filePaths) {
+                const url = await DataManager.getDocumentSignedUrl(path);
+                if (url) {
+                    const isPdf = path.toLowerCase().endsWith('.pdf');
+                    if (isPdf) {
+                        parts.push(`<a href="${url}" target="_blank" rel="noopener" class="document-file-link">فتح PDF</a>`);
+                    } else {
+                        parts.push(`<img src="${url}" alt="" class="document-preview-img" loading="lazy">`);
+                    }
+                }
+            }
+            container.innerHTML = parts.length ? parts.join('') : '<p class="text-muted">لا توجد ملفات مرفقة.</p>';
+        } else {
+            container.innerHTML = '<p class="text-muted">لا توجد ملفات مرفقة.</p>';
+        }
+        this.openModal();
+    },
+
+    openEditDocument(id) {
+        const doc = DataManager.getDocumentById(id);
+        if (!doc) return;
+        const books = DataManager.getBooks();
+        const bookOptions = '<option value="">لا يوجد</option>' + books.map(b => `<option value="${b.id}" ${b.id === doc.bookId ? 'selected' : ''}>${(b.name || '').replace(/</g, '&lt;')}</option>`).join('');
+        const modalBody = document.getElementById('modal-body');
+        document.getElementById('modal-title').textContent = 'تعديل الوثيقة';
+        modalBody.innerHTML = `
+            <form id="edit-document-form">
+                <div class="form-group">
+                    <label>عنوان الوثيقة <span class="required">*</span></label>
+                    <input type="text" name="title" value="${(doc.title || '').replace(/"/g, '&quot;')}" required>
+                </div>
+                <div class="form-group">
+                    <label>الوصف</label>
+                    <textarea name="description" rows="2">${(doc.description || '').replace(/</g, '&lt;')}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>القسم</label>
+                    <select name="category">
+                        <option value="أخرى" ${doc.category === 'أخرى' ? 'selected' : ''}>أخرى</option>
+                        <option value="خطابات" ${doc.category === 'خطابات' ? 'selected' : ''}>خطابات</option>
+                        <option value="عقود" ${doc.category === 'عقود' ? 'selected' : ''}>عقود</option>
+                        <option value="صور قديمة" ${doc.category === 'صور قديمة' ? 'selected' : ''}>صور قديمة</option>
+                        <option value="مخطوطات" ${doc.category === 'مخطوطات' ? 'selected' : ''}>مخطوطات</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الوثيقة</label>
+                    <input type="date" name="documentDate" value="${doc.documentDate || ''}">
+                </div>
+                <div class="form-group">
+                    <label>ربط بكتاب</label>
+                    <select name="bookId">${bookOptions}</select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>`;
+        document.getElementById('edit-document-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            try {
+                await DataManager.updateDocument(id, {
+                    title: fd.get('title'),
+                    description: fd.get('description') || '',
+                    category: fd.get('category') || 'أخرى',
+                    documentDate: fd.get('documentDate') || null,
+                    bookId: fd.get('bookId') || null
+                });
+                this.closeModal();
+                this.renderArchive();
+                alert('تم تحديث الوثيقة.');
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند الحفظ.');
+            }
+        };
+        this.openModal();
+    },
+
+    confirmDeleteDocument(id) {
+        const doc = DataManager.getDocumentById(id);
+        const title = doc ? (doc.title || 'هذه الوثيقة') : 'هذه الوثيقة';
+        this.showConfirmModal(`هل أنت متأكد من حذف "${title}"؟`, async () => {
+            try {
+                await DataManager.deleteDocument(id);
+                this.renderArchive();
+            } catch (err) {
+                alert(err && err.message ? err.message : 'حدث خطأ عند الحذف.');
+            }
+        });
     },
 
     // ========== REPORTS ==========
@@ -1797,6 +2034,14 @@ const App = {
 
         // Settings - backup export
         document.getElementById('export-backup-btn').addEventListener('click', () => this.exportBackupExcel());
+
+        // Document archive
+        const archiveAddBtn = document.getElementById('archive-add-btn');
+        if (archiveAddBtn) archiveAddBtn.addEventListener('click', () => this.openAddDocument());
+        const archiveSearch = document.getElementById('archive-search');
+        if (archiveSearch) archiveSearch.addEventListener('input', () => this.renderArchive());
+        const archiveCatFilter = document.getElementById('archive-category-filter');
+        if (archiveCatFilter) archiveCatFilter.addEventListener('change', () => this.renderArchive());
 
         // Settings - delete all data (admin only; strong confirmation)
         document.getElementById('delete-all-data-btn').addEventListener('click', () => {
