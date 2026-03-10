@@ -1370,10 +1370,19 @@ body {
     align-items: center;
     z-index: 2000;
     padding: var(--spacing-md);
+    /* Keep centering consistent in RTL so modal is not pushed to a corner */
+    direction: ltr;
 }
 
 .modal-overlay.active {
     display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay .modal {
+    /* Restore RTL for modal content (Arabic, forms) */
+    direction: rtl;
 }
 
 /* CSV import progress overlay */
@@ -1456,7 +1465,9 @@ body {
     width: 100%;
     max-width: 500px;
     max-height: 90vh;
-    overflow-y: auto;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
     animation: modalSlideIn 0.3s ease;
 }
 
@@ -1472,12 +1483,14 @@ body {
 }
 
 .modal-header {
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-md) var(--spacing-lg);
     border-bottom: 1px solid var(--border-light);
     background: var(--bg-secondary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .modal-header h3 {
@@ -1500,6 +1513,51 @@ body {
 
 .modal-body {
     padding: var(--spacing-lg);
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* Form modals (edit document, add document): match app form/filter style */
+.modal.modal--form {
+    max-width: 540px;
+}
+/* Same look as app filter inputs and selects (archive toolbar, tables) */
+.modal.modal--form .form-group input,
+.modal.modal--form .form-group select,
+.modal.modal--form .form-group textarea {
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+.modal.modal--form .form-group input:focus,
+.modal.modal--form .form-group select:focus,
+.modal.modal--form .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+.modal.modal--form .form-group select {
+    min-height: 2.25rem;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.modal.modal--form .form-group label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.modal.modal--form .modal-header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-light);
+}
+.modal.modal--form .modal-body {
+    background: var(--card-bg);
 }
 
 .modal-actions {
@@ -1856,10 +1914,49 @@ body {
     margin-top: var(--spacing-sm);
 }
 
+/* Archive toolbar: same look as other filter bars */
+.archive-toolbar {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    flex-wrap: wrap;
+}
+.archive-toolbar .filter-input {
+    width: auto;
+    min-width: 180px;
+    max-width: 280px;
+}
+.archive-toolbar .filter-select {
+    width: auto;
+    min-width: 140px;
+    max-width: 180px;
+}
+
 .document-view-meta {
     margin-bottom: var(--spacing-md);
     color: var(--text-secondary);
     font-size: 0.95rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+.document-view-meta p {
+    margin-bottom: var(--spacing-xs);
+}
+.document-view-meta p:last-child {
+    margin-bottom: 0;
+}
+.document-view-book-name {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Document view modal: wider so book name and content fit */
+.modal.modal--document-view {
+    max-width: 640px;
+}
+.modal.modal--document-view .modal-body {
+    max-height: 75vh;
+    overflow-y: auto;
 }
 
 .document-view-files {
@@ -1867,11 +1964,13 @@ body {
     flex-wrap: wrap;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
+    max-height: 50vh;
+    overflow-y: auto;
 }
 
 .document-preview-img {
     max-width: 100%;
-    max-height: 320px;
+    max-height: 280px;
     object-fit: contain;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-light);
@@ -1890,6 +1989,16 @@ body {
     background: var(--primary-lighter);
 }
 
+/* Container for linked docs in edit-book modal: avoid oversized box */
+.form-group.linked-docs-wrap {
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+}
+
 .linked-docs-list {
     list-style: none;
     padding: 0;
@@ -1901,15 +2010,107 @@ body {
 }
 
 .linked-docs-list .btn-link {
+    display: block;
+    width: 100%;
+    text-align: right;
+    word-break: break-word;
+    overflow-wrap: break-word;
     background: none;
     border: none;
     color: var(--primary-color);
     cursor: pointer;
     text-decoration: underline;
-    padding: 0;
+    padding: var(--spacing-xs) 0;
     font-size: inherit;
 }
 
 .linked-docs-list .btn-link:hover {
     color: var(--primary-hover);
+}
+
+/* === Book selector (search + numbered list) in document forms === */
+.document-book-field .book-select-wrap {
+    position: relative;
+}
+.document-book-field .book-select-trigger {
+    width: 100%;
+    text-align: right;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+    min-height: 2.25rem;
+}
+.document-book-field .book-select-trigger:hover {
+    border-color: var(--primary-color);
+}
+.document-book-field .book-select-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    margin-top: var(--spacing-xs);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+    overflow: hidden;
+}
+.document-book-field .book-select-dropdown.open {
+    display: block;
+}
+.document-book-field .book-select-search {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--spacing-sm);
+    border: none;
+    border-bottom: 1px solid var(--border-light);
+    border-radius: 0;
+    font-size: 0.9rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+.document-book-field .book-select-search:focus {
+    outline: none;
+}
+.document-book-field .book-select-search::placeholder {
+    color: var(--text-muted);
+}
+.document-book-field .book-select-list {
+    max-height: 220px;
+    overflow-y: auto;
+    padding: var(--spacing-xs);
+}
+.document-book-field .book-select-item {
+    padding: var(--spacing-sm);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+.document-book-field .book-select-item:hover {
+    background: var(--primary-lighter);
+    color: var(--primary-color);
+}
+.document-book-field .book-select-empty {
+    padding: var(--spacing-md);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+.document-book-field .book-select-item.book-select-clear {
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: var(--spacing-xs);
+}
+.document-book-field .book-select-item.book-select-clear:hover {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
 }

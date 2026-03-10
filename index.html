@@ -651,23 +651,25 @@
             </div>
 
             <!-- Document Archive Page -->
-            <div id="archive-page" class="page">
-                <h1><i class="fas fa-archive"></i> أرشيف الوثائق</h1>
-                <p class="archive-desc">حفظ وعرض صور المستندات والأوراق مع ربط اختياري بكتاب.</p>
+            <div id="archive-page" class="page archive-page">
                 <div class="page-header">
-                    <input type="text" id="archive-search" class="filter-input" placeholder="بحث بالعنوان أو الوصف..." style="max-width: 280px;">
-                    <select id="archive-category-filter" style="max-width: 160px;">
-                        <option value="">كل الأقسام</option>
-                        <option value="خطابات">خطابات</option>
-                        <option value="عقود">عقود</option>
-                        <option value="صور قديمة">صور قديمة</option>
-                        <option value="مخطوطات">مخطوطات</option>
-                        <option value="أخرى">أخرى</option>
-                    </select>
-                    <button type="button" class="btn btn-primary" id="archive-add-btn" data-require-role="edit">
-                        <i class="fas fa-plus"></i> إضافة وثيقة
-                    </button>
+                    <h1><i class="fas fa-archive"></i> أرشيف الوثائق</h1>
+                    <div class="header-actions archive-toolbar">
+                        <input type="text" id="archive-search" class="filter-input" placeholder="بحث بالعنوان أو الوصف...">
+                        <select id="archive-category-filter" class="filter-select">
+                            <option value="">كل الأقسام</option>
+                            <option value="خطابات">خطابات</option>
+                            <option value="عقود">عقود</option>
+                            <option value="صور قديمة">صور قديمة</option>
+                            <option value="مخطوطات">مخطوطات</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                        <button type="button" class="btn btn-primary" id="archive-add-btn" data-require-role="edit">
+                            <i class="fas fa-plus"></i> إضافة وثيقة
+                        </button>
+                    </div>
                 </div>
+                <p class="archive-desc">حفظ وعرض صور المستندات والأوراق مع ربط اختياري بكتاب.</p>
                 <div id="archive-list" class="archive-list">
                     <!-- Filled by JS -->
                 </div>

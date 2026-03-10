@@ -552,7 +552,7 @@ const App = {
                 ${(() => {
                     const linked = DataManager.getDocumentsByBookId ? DataManager.getDocumentsByBookId(bookId) : [];
                     if (!linked.length) return '';
-                    return `<div class="form-group"><label>الوثائق المرتبطة</label><ul class="linked-docs-list">${linked.map(d => `<li><button type="button" class="btn-link" onclick="App.closeModal(); App.navigateTo('archive'); setTimeout(function(){ App.openViewDocument('${d.id}'); }, 300);">${(d.title || 'وثيقة').replace(/</g, '&lt;')}</button></li>`).join('')}</ul></div>`;
+                    return `<div class="form-group linked-docs-wrap"><label>الوثائق المرتبطة</label><ul class="linked-docs-list">${linked.map(d => `<li><button type="button" class="btn-link" onclick="App.closeModal(); App.navigateTo('archive'); setTimeout(function(){ App.openViewDocument('${d.id}'); }, 300);">${(d.title || 'وثيقة').replace(/</g, '&lt;')}</button></li>`).join('')}</ul></div>`;
                 })()}
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
@@ -1443,8 +1443,12 @@ const App = {
 
     openAddDocument() {
         const books = DataManager.getBooks();
-        const bookOptions = '<option value="">لا يوجد</option>' + books.map(b => `<option value="${b.id}">${(b.name || '').replace(/</g, '&lt;')}</option>`).join('');
         const modalBody = document.getElementById('modal-body');
+        const modalEl = document.querySelector('#modal-overlay .modal');
+        if (modalEl) {
+            modalEl.classList.remove('modal--document-view');
+            modalEl.classList.add('modal--form');
+        }
         document.getElementById('modal-title').textContent = 'إضافة وثيقة';
         modalBody.innerHTML = `
             <form id="add-document-form">
@@ -1470,9 +1474,16 @@ const App = {
                     <label>تاريخ الوثيقة (اختياري)</label>
                     <input type="date" name="documentDate">
                 </div>
-                <div class="form-group">
+                <div class="form-group document-book-field">
                     <label>ربط بكتاب (اختياري)</label>
-                    <select name="bookId">${bookOptions}</select>
+                    <div class="book-select-wrap">
+                        <input type="hidden" name="bookId" value="">
+                        <button type="button" class="book-select-trigger">اختر كتاباً...</button>
+                        <div class="book-select-dropdown">
+                            <input type="text" class="book-select-search" placeholder="بحث عن كتاب..." autocomplete="off">
+                            <div class="book-select-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>صور/ملفات الوثيقة</label>
@@ -1483,6 +1494,7 @@ const App = {
                     <button type="submit" class="btn btn-primary">حفظ</button>
                 </div>
             </form>`;
+        this.setupBookSelect(document.getElementById('add-document-form'), books, null);
         document.getElementById('add-document-form').onsubmit = async (e) => {
             e.preventDefault();
             const form = e.target;
@@ -1516,10 +1528,16 @@ const App = {
         const modalBody = document.getElementById('modal-body');
         document.getElementById('modal-title').textContent = (doc.title || 'وثيقة').replace(/</g, '&lt;');
         let imgsHtml = '<p class="text-muted">جاري تحميل الصور...</p>';
+        const modalEl = document.querySelector('#modal-overlay .modal');
+        if (modalEl) {
+            modalEl.classList.remove('modal--form');
+            modalEl.classList.add('modal--document-view');
+        }
         modalBody.innerHTML = `
             <div class="document-view-meta">
                 ${doc.description ? `<p>${(doc.description || '').replace(/</g, '&lt;')}</p>` : ''}
-                <p><strong>القسم:</strong> ${(doc.category || 'أخرى').replace(/</g, '&lt;')} ${dateStr ? ' | <strong>التاريخ:</strong> ' + dateStr : ''} ${bookName ? ' | <strong>الكتاب:</strong> ' + bookName.replace(/</g, '&lt;') : ''}</p>
+                <p><strong>القسم:</strong> ${(doc.category || 'أخرى').replace(/</g, '&lt;')}${dateStr ? ' | <strong>التاريخ:</strong> ' + dateStr : ''}</p>
+                ${bookName ? `<p><strong>الكتاب:</strong> <span class="document-view-book-name">${bookName.replace(/</g, '&lt;')}</span></p>` : ''}
             </div>
             <div id="document-view-files" class="document-view-files">${imgsHtml}</div>
             <div class="modal-actions"><button type="button" class="btn btn-secondary" onclick="App.closeModal()">إغلاق</button></div>`;
@@ -1548,8 +1566,12 @@ const App = {
         const doc = DataManager.getDocumentById(id);
         if (!doc) return;
         const books = DataManager.getBooks();
-        const bookOptions = '<option value="">لا يوجد</option>' + books.map(b => `<option value="${b.id}" ${b.id === doc.bookId ? 'selected' : ''}>${(b.name || '').replace(/</g, '&lt;')}</option>`).join('');
         const modalBody = document.getElementById('modal-body');
+        const modalEl = document.querySelector('#modal-overlay .modal');
+        if (modalEl) {
+            modalEl.classList.remove('modal--document-view');
+            modalEl.classList.add('modal--form');
+        }
         document.getElementById('modal-title').textContent = 'تعديل الوثيقة';
         modalBody.innerHTML = `
             <form id="edit-document-form">
@@ -1575,15 +1597,23 @@ const App = {
                     <label>تاريخ الوثيقة</label>
                     <input type="date" name="documentDate" value="${doc.documentDate || ''}">
                 </div>
-                <div class="form-group">
+                <div class="form-group document-book-field">
                     <label>ربط بكتاب</label>
-                    <select name="bookId">${bookOptions}</select>
+                    <div class="book-select-wrap">
+                        <input type="hidden" name="bookId" value="${(doc.bookId || '').replace(/"/g, '&quot;')}">
+                        <button type="button" class="book-select-trigger">اختر كتاباً...</button>
+                        <div class="book-select-dropdown">
+                            <input type="text" class="book-select-search" placeholder="بحث عن كتاب..." autocomplete="off">
+                            <div class="book-select-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="App.closeModal()">إلغاء</button>
                     <button type="submit" class="btn btn-primary">حفظ</button>
                 </div>
             </form>`;
+        this.setupBookSelect(document.getElementById('edit-document-form'), books, doc.bookId || null);
         document.getElementById('edit-document-form').onsubmit = async (e) => {
             e.preventDefault();
             const fd = new FormData(e.target);
@@ -1603,6 +1633,75 @@ const App = {
             }
         };
         this.openModal();
+    },
+
+    setupBookSelect(formEl, books, selectedId) {
+        if (!formEl) return;
+        const wrap = formEl.querySelector('.book-select-wrap');
+        const hiddenInput = formEl.querySelector('input[name="bookId"]');
+        const trigger = formEl.querySelector('.book-select-trigger');
+        const dropdown = formEl.querySelector('.book-select-dropdown');
+        const searchInput = formEl.querySelector('.book-select-search');
+        const listEl = formEl.querySelector('.book-select-list');
+        if (!wrap || !hiddenInput || !trigger || !dropdown || !searchInput || !listEl) return;
+
+        const esc = (s) => (s || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        const selectedBook = selectedId ? books.find(b => b.id === selectedId) : null;
+
+        function renderList(filter) {
+            const q = (filter || '').trim().toLowerCase();
+            const items = books
+                .map((b, i) => ({ book: b, num: i + 1, name: (b.name || '').replace(/</g, '&lt;') }))
+                .filter(({ name }) => !q || name.toLowerCase().includes(q));
+            const clearRow = '<div class="book-select-item book-select-clear" data-id="" role="option">— لا يوجد —</div>';
+            listEl.innerHTML = items.length
+                ? clearRow + items.map(({ book, num, name }) => `<div class="book-select-item" data-id="${esc(book.id)}" role="option">${num}. ${name}</div>`).join('')
+                : '<div class="book-select-empty">لا توجد نتائج</div>';
+        }
+
+        function setSelected(book) {
+            const id = book ? book.id : '';
+            const name = book ? (book.name || '') : '';
+            hiddenInput.value = id;
+            trigger.textContent = name || 'اختر كتاباً...';
+            dropdown.classList.remove('open');
+        }
+
+        renderList();
+        setSelected(selectedBook);
+
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdown.classList.toggle('open');
+            if (dropdown.classList.contains('open')) {
+                searchInput.value = '';
+                renderList();
+                searchInput.focus();
+            }
+        });
+
+        searchInput.addEventListener('input', () => renderList(searchInput.value));
+        searchInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') dropdown.classList.remove('open'); });
+
+        listEl.addEventListener('click', (e) => {
+            const item = e.target.closest('.book-select-item');
+            if (!item) return;
+            const id = item.dataset.id || '';
+            if (id === '') {
+                setSelected(null);
+                return;
+            }
+            const book = books.find(b => b.id === id);
+            if (book) setSelected(book);
+        });
+
+        document.addEventListener('click', function closeOnOutside(e) {
+            if (!wrap.contains(e.target)) {
+                dropdown.classList.remove('open');
+                document.removeEventListener('click', closeOnOutside);
+            }
+        });
+        setTimeout(() => document.addEventListener('click', closeOnOutside), 0);
     },
 
     confirmDeleteDocument(id) {
@@ -1801,6 +1900,11 @@ const App = {
 
     closeModal() {
         document.getElementById('modal-overlay').classList.remove('active');
+        const modalEl = document.querySelector('#modal-overlay .modal');
+        if (modalEl) {
+            modalEl.classList.remove('modal--document-view');
+            modalEl.classList.remove('modal--form');
+        }
     },
 
     showConfirmModal(message, onConfirm) {
