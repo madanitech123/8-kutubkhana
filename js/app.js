@@ -171,6 +171,7 @@ const App = {
                     const el = document.querySelector(`.filter-input[data-column="${column}"], .filter-select[data-column="${column}"]`);
                     if (el) el.value = this.state.filters[column] || '';
                 });
+                this.syncMobileFiltersUI();
                 this.renderBooks();
                 break;
             case 'add-book':
@@ -407,6 +408,115 @@ const App = {
 
         // Update bulk delete button
         this.updateBulkDeleteButton();
+
+        // Render mobile view
+        this.renderBooksMobile(books, pageBooks, start, totalPages);
+    },
+
+    renderBooksMobile(allBooks, pageBooks, startIndex, totalPages) {
+        const mobileList = document.getElementById('books-mobile-list');
+        if (!mobileList) return;
+
+        const showEdit = this.canEdit();
+
+        // Update results count
+        const countEl = document.getElementById('mobile-results-count');
+        if (countEl) {
+            countEl.textContent = `عرض ${pageBooks.length} من ${allBooks.length} كتب`;
+        }
+
+        if (pageBooks.length === 0) {
+            mobileList.innerHTML = `
+                <div class="mobile-compact-empty">
+                    <i class="fas fa-book-open"></i>
+                    <p>لا توجد كتب للعرض</p>
+                </div>
+            `;
+        } else {
+            mobileList.innerHTML = pageBooks.map((book, index) => {
+                const rowNum = startIndex + index + 1;
+                const statusClass = book.status === 'معار' ? 'issued' : 'available';
+                const statusText = book.status || 'متاح';
+                const esc = (v) => (v || '-').replace(/</g, '&lt;');
+                const actionsHtml = showEdit ? `
+                    <div class="mobile-compact-actions">
+                        <button class="act-edit" onclick="event.stopPropagation(); App.editBook('${book.id}')"><i class="fas fa-pen"></i> تعديل</button>
+                        <button class="act-del" onclick="event.stopPropagation(); App.confirmDeleteBook('${book.id}')"><i class="fas fa-trash"></i> حذف</button>
+                    </div>` : '';
+
+                return `
+                <div class="mobile-compact-item" data-id="${book.id}">
+                    <div class="mobile-compact-row" onclick="this.parentElement.classList.toggle('open')">
+                        <span class="mobile-compact-num">${rowNum}</span>
+                        <div class="mobile-compact-info">
+                            <div class="mobile-compact-name">${esc(book.name)}</div>
+                            <div class="mobile-compact-sub">${esc(book.author)} · ${esc(book.category)}</div>
+                        </div>
+                        <span class="mobile-compact-badge ${statusClass}">${statusText}</span>
+                        <i class="fas fa-chevron-left mobile-compact-chevron"></i>
+                    </div>
+                    <div class="mobile-compact-details">
+                        <div class="mobile-detail-grid">
+                            <div class="mobile-detail-item"><label>المحقق</label><span>${esc(book.editor)}</span></div>
+                            <div class="mobile-detail-item"><label>الأجزاء</label><span>${book.parts || 1}</span></div>
+                            <div class="mobile-detail-item"><label>دار النشر</label><span>${esc(book.publisher)}</span></div>
+                            <div class="mobile-detail-item"><label>السنة</label><span>${book.year || '-'}</span></div>
+                            <div class="mobile-detail-item"><label>الصندوق</label><span>${esc(book.cabinet)}</span></div>
+                            <div class="mobile-detail-item"><label>الطاق</label><span>${esc(book.shelf)}</span></div>
+                        </div>
+                        ${actionsHtml}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Update mobile pagination
+        const mobilePageInfo = document.getElementById('mobile-page-info');
+        const mobilePrev = document.getElementById('mobile-prev-page');
+        const mobileNext = document.getElementById('mobile-next-page');
+        if (mobilePageInfo) mobilePageInfo.textContent = `صفحة ${this.state.booksPage} من ${totalPages}`;
+        if (mobilePrev) mobilePrev.disabled = this.state.booksPage === 1;
+        if (mobileNext) mobileNext.disabled = this.state.booksPage === totalPages;
+
+        // Sync mobile search input with global search
+        const mobileSearch = document.getElementById('mobile-book-search');
+        if (mobileSearch && document.activeElement !== mobileSearch) {
+            mobileSearch.value = this.state.globalSearch || '';
+        }
+
+        // Populate category chips dynamically
+        this.populateMobileCategoryChips();
+    },
+
+    populateMobileCategoryChips() {
+        const container = document.getElementById('mobile-cat-chips');
+        if (!container) return;
+
+        const categories = DataManager.getCategories();
+        const currentCat = (this.state.filters.category || '').toLowerCase();
+
+        const allBtn = `<button class="${!currentCat ? 'active' : ''}" data-cat="">الكل</button>`;
+        const catBtns = categories.map(cat =>
+            `<button class="${cat.toLowerCase() === currentCat ? 'active' : ''}" data-cat="${cat.replace(/"/g, '&quot;')}">${cat}</button>`
+        ).join('');
+
+        container.innerHTML = allBtn + catBtns;
+    },
+
+    syncMobileFiltersUI() {
+        const mobileSearch = document.getElementById('mobile-book-search');
+        if (mobileSearch) mobileSearch.value = this.state.globalSearch || '';
+
+        const statusVal = (this.state.filters.status || '').toLowerCase();
+        const statusTabs = document.querySelectorAll('#mobile-status-tabs button');
+        statusTabs.forEach(btn => {
+            const btnStatus = (btn.dataset.status || '').toLowerCase();
+            btn.classList.toggle('active', btnStatus === statusVal);
+        });
+
+        const hasActiveFilter = !!(this.state.filters.status || this.state.filters.category);
+        const filterBtn = document.getElementById('mobile-filter-toggle');
+        if (filterBtn) filterBtn.classList.toggle('has-filter', hasActiveFilter);
     },
 
     getFilteredBooks() {
@@ -2060,6 +2170,86 @@ const App = {
                 this.renderBooks();
             });
         });
+
+        // Mobile: search input
+        const mobileSearchInput = document.getElementById('mobile-book-search');
+        if (mobileSearchInput) {
+            mobileSearchInput.addEventListener('input', (e) => {
+                this.state.globalSearch = e.target.value.trim();
+                this.state.booksPage = 1;
+                const desktopSearch = document.getElementById('global-search-input');
+                if (desktopSearch) desktopSearch.value = this.state.globalSearch;
+                this.renderBooks();
+            });
+        }
+
+        // Mobile: filter drawer toggle
+        const mobileFilterBtn = document.getElementById('mobile-filter-toggle');
+        if (mobileFilterBtn) {
+            mobileFilterBtn.addEventListener('click', () => {
+                const drawer = document.getElementById('mobile-filter-drawer');
+                if (drawer) {
+                    drawer.classList.toggle('open');
+                    mobileFilterBtn.classList.toggle('has-filter', drawer.classList.contains('open'));
+                }
+            });
+        }
+
+        // Mobile: status tabs (event delegation)
+        const mobileStatusTabs = document.getElementById('mobile-status-tabs');
+        if (mobileStatusTabs) {
+            mobileStatusTabs.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                mobileStatusTabs.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const statusVal = btn.dataset.status || '';
+                this.state.filters.status = statusVal;
+                this.state.booksPage = 1;
+                const desktopStatus = document.querySelector('.filter-select[data-column="status"]');
+                if (desktopStatus) desktopStatus.value = statusVal;
+                this.renderBooks();
+            });
+        }
+
+        // Mobile: category chips (event delegation)
+        const mobileCatChips = document.getElementById('mobile-cat-chips');
+        if (mobileCatChips) {
+            mobileCatChips.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                mobileCatChips.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const catVal = btn.dataset.cat || '';
+                this.state.filters.category = catVal;
+                this.state.booksPage = 1;
+                const desktopCat = document.querySelector('.filter-input[data-column="category"]');
+                if (desktopCat) desktopCat.value = catVal;
+                this.renderBooks();
+            });
+        }
+
+        // Mobile: pagination
+        const mobilePrev = document.getElementById('mobile-prev-page');
+        if (mobilePrev) {
+            mobilePrev.addEventListener('click', () => {
+                if (this.state.booksPage > 1) {
+                    this.state.booksPage--;
+                    this.renderBooks();
+                }
+            });
+        }
+        const mobileNext = document.getElementById('mobile-next-page');
+        if (mobileNext) {
+            mobileNext.addEventListener('click', () => {
+                const books = this.getFilteredBooks();
+                const totalPages = Math.ceil(books.length / this.state.booksPerPage);
+                if (this.state.booksPage < totalPages) {
+                    this.state.booksPage++;
+                    this.renderBooks();
+                }
+            });
+        }
 
         // Loans
         document.getElementById('new-loan-btn').addEventListener('click', () => this.openLoanModal());

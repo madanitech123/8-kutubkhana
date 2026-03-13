@@ -359,6 +359,46 @@
                     </div>
                 </div>
                 </div>
+
+                <!-- Mobile: Expandable list with Search A -->
+                <div class="books-mobile-view">
+                    <div class="mobile-search-bar">
+                        <input type="text" id="mobile-book-search" placeholder="بحث بالاسم، المؤلف، الناشر...">
+                        <button class="mobile-filter-toggle" id="mobile-filter-toggle" title="فلترة">
+                            <i class="fas fa-sliders-h"></i>
+                            <span class="mobile-filter-dot"></span>
+                        </button>
+                    </div>
+                    <div class="mobile-filter-drawer" id="mobile-filter-drawer">
+                        <div class="mobile-filter-drawer-inner">
+                            <div class="mobile-filter-group">
+                                <span class="mobile-filter-label">الحالة</span>
+                                <div class="mobile-status-tabs" id="mobile-status-tabs">
+                                    <button class="active" data-status="">الكل</button>
+                                    <button data-status="متاح">متاح</button>
+                                    <button data-status="معار">معار</button>
+                                </div>
+                            </div>
+                            <div class="mobile-filter-group">
+                                <span class="mobile-filter-label">القسم</span>
+                                <div class="mobile-cat-chips" id="mobile-cat-chips">
+                                    <button class="active" data-cat="">الكل</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mobile-results-count" id="mobile-results-count"></div>
+                    <div class="mobile-compact-list" id="books-mobile-list"></div>
+                    <div class="mobile-pagination">
+                        <button class="btn btn-secondary" id="mobile-prev-page">
+                            <i class="fas fa-chevron-right"></i> السابق
+                        </button>
+                        <span id="mobile-page-info">صفحة 1 من 1</span>
+                        <button class="btn btn-secondary" id="mobile-next-page">
+                            التالي <i class="fas fa-chevron-left"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Add Book Page -->
