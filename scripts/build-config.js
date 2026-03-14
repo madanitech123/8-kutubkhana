@@ -7,6 +7,7 @@ const path = require('path');
 
 const url = process.env.SUPABASE_URL || '';
 const key = process.env.SUPABASE_ANON_KEY || '';
+const geminiKey = process.env.GEMINI_API_KEY || '';
 const outPath = path.join(__dirname, '..', 'js', 'config.js');
 
 // On Vercel env is set; locally skip overwriting if no env so we don't wipe manual config.js
@@ -16,10 +17,11 @@ if (!url && !key && fs.existsSync(outPath)) {
 }
 
 const content = `/**
- * Supabase config (auto-generated at build from env vars)
+ * App config (auto-generated at build from env vars)
  */
 window.SUPABASE_URL = ${JSON.stringify(url)};
 window.SUPABASE_ANON_KEY = ${JSON.stringify(key)};
+window.GEMINI_API_KEY = ${JSON.stringify(geminiKey)};
 `;
 
 fs.mkdirSync(path.dirname(outPath), { recursive: true });

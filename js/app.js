@@ -201,6 +201,9 @@ const App = {
             case 'archive':
                 this.renderArchive();
                 break;
+            case 'scan-books':
+                this.renderScanBooks();
+                break;
             case 'settings':
                 this.renderSettings();
                 break;
@@ -2459,6 +2462,407 @@ const App = {
             this.navigateTo('books');
             document.querySelector('.filter-select[data-column="status"]').value = 'معار';
         });
+
+        // ========== SCAN BOOKS (Gemini AI) ==========
+        this.scanState = { files: [], extractedBooks: [] };
+
+        const scanUploadArea = document.getElementById('scan-upload-area');
+        const scanFileInput = document.getElementById('scan-file-input');
+
+        if (scanUploadArea) {
+            scanUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); scanUploadArea.classList.add('drag-over'); });
+            scanUploadArea.addEventListener('dragleave', () => scanUploadArea.classList.remove('drag-over'));
+            scanUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                scanUploadArea.classList.remove('drag-over');
+                this.handleScanFiles(e.dataTransfer.files);
+            });
+        }
+        if (scanFileInput) {
+            scanFileInput.addEventListener('change', (e) => {
+                this.handleScanFiles(e.target.files);
+                e.target.value = '';
+            });
+        }
+
+        document.getElementById('scan-start-btn')?.addEventListener('click', () => this.startScanExtraction());
+        document.getElementById('scan-clear-btn')?.addEventListener('click', () => this.clearScanFiles());
+        document.getElementById('scan-save-all-btn')?.addEventListener('click', () => this.saveScanResults());
+        document.getElementById('scan-back-btn')?.addEventListener('click', () => this.scanGoBack());
+        document.getElementById('scan-again-btn')?.addEventListener('click', () => this.resetScan());
+        document.getElementById('scan-go-books-btn')?.addEventListener('click', () => this.navigateTo('books'));
+    },
+
+    // ========== SCAN BOOKS METHODS ==========
+
+    renderScanBooks() {
+        this.showScanStep('upload');
+        if (this.scanState?.files?.length) {
+            this.renderScanPreviews();
+        }
+    },
+
+    getScanBatchDefaults() {
+        return {
+            cabinet: (document.getElementById('scan-default-cabinet')?.value || '').trim(),
+            shelf: (document.getElementById('scan-default-shelf')?.value || '').trim()
+        };
+    },
+
+    showScanStep(step) {
+        ['upload', 'processing', 'review', 'done'].forEach(s => {
+            const el = document.getElementById(`scan-${s}-step`);
+            if (el) el.style.display = s === step ? '' : 'none';
+        });
+    },
+
+    handleScanFiles(fileList) {
+        if (!this.scanState) this.scanState = { files: [], extractedBooks: [] };
+        const newFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+        if (!newFiles.length) return;
+        this.scanState.files.push(...newFiles);
+        this.renderScanPreviews();
+        document.getElementById('scan-start-actions').style.display = '';
+    },
+
+    renderScanPreviews() {
+        const grid = document.getElementById('scan-preview-grid');
+        if (!grid) return;
+        grid.innerHTML = this.scanState.files.map((file, i) => {
+            const url = URL.createObjectURL(file);
+            return `
+                <div class="scan-preview-item" data-index="${i}">
+                    <img src="${url}" alt="${file.name}">
+                    <button class="scan-preview-remove" onclick="App.removeScanFile(${i})" title="إزالة">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="scan-preview-status pending" id="scan-status-${i}">جاهز</div>
+                </div>`;
+        }).join('');
+    },
+
+    removeScanFile(index) {
+        this.scanState.files.splice(index, 1);
+        this.renderScanPreviews();
+        if (!this.scanState.files.length) {
+            document.getElementById('scan-start-actions').style.display = 'none';
+        }
+    },
+
+    clearScanFiles() {
+        this.scanState = { files: [], extractedBooks: [] };
+        document.getElementById('scan-preview-grid').innerHTML = '';
+        document.getElementById('scan-start-actions').style.display = 'none';
+    },
+
+    async fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    },
+
+    _geminiModels: ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash'],
+
+    _geminiPrompt: `You are a library data extraction assistant. Analyze this image of a book or books and extract the following information for EACH book visible in the image.
+
+Return a JSON array where each element has these fields:
+- "name": Book title (keep original language - Arabic, Bengali, Urdu, English, etc.)
+- "author": Author name (keep original language)
+- "category": Category/subject (e.g. حديث، فقه، تفسير، سيرة، تاريخ، أدب، تزكية، عام etc.)
+- "editor": Editor/Tahqiq (if visible, otherwise empty string)
+- "parts": Number of parts/volumes (integer, default 1)
+- "publisher": Publisher / publishing house / imprint name only (if visible, otherwise empty string)
+- "year": Publication year (use Western/ASCII digits like 2021, not Bengali/Arabic numerals)
+- "cabinet": "" (empty, user will fill)
+- "shelf": "" (empty, user will fill)
+
+IMPORTANT RULES:
+- Return ONLY valid JSON array, no other text or markdown
+- If multiple books are visible, return multiple objects
+- Keep text in the original language as it appears on the book
+- If you cannot read a field clearly, use empty string ""
+- For year, always convert to Western digits (e.g. ২০২১ → 2021, ١٤٤٢ → 1442)
+- For publisher, extract only the publishing house / organization / imprint name
+- Do NOT include proprietor, founder, owner, director, editor, printer, distributor, manager, or other person names in publisher
+- If text says things like "owned by", "by", "proprietor", "under supervision of", "managed by", or includes a person's name near the publisher, ignore the person and keep only the publishing house name
+- If both a publishing house name and a person's name appear together, prefer only the publishing house name
+- If you are not sure whether a person name is part of the brand, prefer the shorter organization name and omit the person name
+- If a book appears to be in Bengali, keep Bengali text. If Arabic, keep Arabic.`,
+
+    async callGeminiVision(base64Data, mimeType, statusCallback) {
+        const apiKey = window.GEMINI_API_KEY;
+        if (!apiKey) throw new Error('مفتاح Gemini API غير موجود في config.js');
+
+        const maxRetries = 3;
+        let lastError;
+
+        for (const model of this._geminiModels) {
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: this._geminiPrompt },
+                                    { inline_data: { mime_type: mimeType, data: base64Data } }
+                                ]
+                            }],
+                            generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
+                        })
+                    });
+
+                    if (response.status === 429) {
+                        const errBody = await response.json().catch(() => ({}));
+                        const retryMatch = (errBody.error?.message || '').match(/retry in ([\d.]+)s/i);
+                        const waitSec = retryMatch ? Math.min(parseFloat(retryMatch[1]), 60) : (attempt + 1) * 15;
+                        if (statusCallback) statusCallback(`تجاوز الحد... إعادة المحاولة بعد ${Math.ceil(waitSec)} ثانية`);
+                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        const err = await response.json().catch(() => ({}));
+                        throw new Error(err.error?.message || `Gemini API error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    const jsonMatch = text.match(/\[[\s\S]*\]/);
+                    if (!jsonMatch) throw new Error('لم يتم العثور على بيانات في الاستجابة');
+                    return JSON.parse(jsonMatch[0]);
+
+                } catch (err) {
+                    lastError = err;
+                    if (err.message?.includes('429') || err.message?.includes('quota')) {
+                        const waitSec = (attempt + 1) * 15;
+                        if (statusCallback) statusCallback(`تجاوز الحد... إعادة بعد ${waitSec} ثانية`);
+                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                        continue;
+                    }
+                    throw err;
+                }
+            }
+        }
+        throw lastError || new Error('فشلت جميع المحاولات');
+    },
+
+    async startScanExtraction() {
+        const files = this.scanState.files;
+        if (!files.length) return;
+        const batchDefaults = this.getScanBatchDefaults();
+
+        this.showScanStep('processing');
+        this.scanState.extractedBooks = [];
+        const progressFill = document.getElementById('scan-progress-fill');
+        const progressDetail = document.getElementById('scan-progress-detail');
+        const progressText = document.getElementById('scan-progress-text');
+
+        let completed = 0;
+        let errors = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const statusEl = document.getElementById(`scan-status-${i}`);
+            if (statusEl) {
+                statusEl.className = 'scan-preview-status processing';
+                statusEl.textContent = 'جاري...';
+            }
+
+            progressText.textContent = `جاري تحليل الصورة ${i + 1} من ${files.length}...`;
+            progressDetail.textContent = `${i} / ${files.length}`;
+
+            try {
+                const base64 = await this.fileToBase64(file);
+                const books = await this.callGeminiVision(base64, file.type, (msg) => {
+                    progressText.textContent = msg;
+                    if (statusEl) statusEl.textContent = 'انتظار...';
+                });
+
+                if (Array.isArray(books)) {
+                    books.forEach(b => {
+                        this.scanState.extractedBooks.push({
+                            name: b.name || '',
+                            author: b.author || '',
+                            category: b.category || '',
+                            editor: b.editor || '',
+                            parts: parseInt(b.parts) || 1,
+                            publisher: b.publisher || '',
+                            year: b.year || '',
+                            cabinet: batchDefaults.cabinet || b.cabinet || '',
+                            shelf: batchDefaults.shelf || b.shelf || ''
+                        });
+                    });
+                }
+
+                if (statusEl) {
+                    statusEl.className = 'scan-preview-status done';
+                    statusEl.textContent = `✓ ${Array.isArray(books) ? books.length : 0}`;
+                }
+            } catch (err) {
+                console.error(`Error processing image ${i}:`, err);
+                errors++;
+                if (statusEl) {
+                    statusEl.className = 'scan-preview-status error';
+                    statusEl.textContent = 'خطأ';
+                }
+            }
+
+            completed++;
+            progressFill.style.width = `${(completed / files.length) * 100}%`;
+            progressDetail.textContent = `${completed} / ${files.length}`;
+        }
+
+        if (this.scanState.extractedBooks.length > 0) {
+            progressText.textContent = 'اكتمل التحليل!';
+            setTimeout(() => {
+                this.showScanStep('review');
+                this.renderScanReviewTable();
+            }, 600);
+        } else {
+            progressText.textContent = errors ? 'حدثت أخطاء أثناء التحليل. حاول مرة أخرى.' : 'لم يتم استخراج أي بيانات.';
+            progressFill.style.background = 'var(--danger-color)';
+            setTimeout(() => this.showScanStep('upload'), 2000);
+        }
+    },
+
+    renderScanReviewTable() {
+        const tbody = document.getElementById('scan-review-tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = this.scanState.extractedBooks.map((book, i) => `
+            <tr data-scan-index="${i}">
+                <td class="col-num">${i + 1}</td>
+                <td><input type="text" data-field="name" value="${(book.name || '').replace(/"/g, '&quot;')}"></td>
+                <td><input type="text" data-field="author" value="${(book.author || '').replace(/"/g, '&quot;')}"></td>
+                <td><input type="text" data-field="category" value="${(book.category || '').replace(/"/g, '&quot;')}"></td>
+                <td><input type="text" data-field="editor" value="${(book.editor || '').replace(/"/g, '&quot;')}"></td>
+                <td><input type="number" data-field="parts" value="${book.parts || 1}" min="1" style="width:60px"></td>
+                <td><input type="text" data-field="publisher" value="${(book.publisher || '').replace(/"/g, '&quot;')}"></td>
+                <td><input type="text" data-field="year" value="${book.year || ''}" style="width:70px"></td>
+                <td><input type="text" data-field="cabinet" value="${(book.cabinet || '').replace(/"/g, '&quot;')}" style="width:70px"></td>
+                <td><input type="text" data-field="shelf" value="${(book.shelf || '').replace(/"/g, '&quot;')}" style="width:60px"></td>
+                <td><button class="scan-row-delete" onclick="App.removeScanRow(${i})" title="حذف"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `).join('');
+    },
+
+    removeScanRow(index) {
+        this.scanState.extractedBooks.splice(index, 1);
+        this.renderScanReviewTable();
+        if (!this.scanState.extractedBooks.length) {
+            this.showScanStep('upload');
+        }
+    },
+
+    collectScanEdits() {
+        const rows = document.querySelectorAll('#scan-review-tbody tr');
+        const books = [];
+        rows.forEach(row => {
+            const book = {};
+            row.querySelectorAll('input').forEach(input => {
+                const field = input.dataset.field;
+                if (field) {
+                    book[field] = field === 'parts' ? (parseInt(input.value) || 1) : input.value.trim();
+                }
+            });
+            if (book.name) books.push(book);
+        });
+        return books;
+    },
+
+    async saveScanResults() {
+        const books = this.collectScanEdits();
+        if (!books.length) {
+            alert('لا توجد كتب للحفظ.');
+            return;
+        }
+
+        const saveBtn = document.getElementById('scan-save-all-btn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+
+        let saved = 0;
+        let duplicates = 0;
+        let errors = 0;
+
+        for (const book of books) {
+            const bookData = {
+                name: book.name,
+                author: book.author || '',
+                category: book.category || '',
+                editor: book.editor || '',
+                parts: book.parts || 1,
+                publisher: book.publisher || '',
+                year: book.year || '',
+                copies: 1,
+                status: 'متاح',
+                cabinet: book.cabinet || '',
+                shelf: book.shelf || '',
+                notes: ''
+            };
+
+            const existing = DataManager.getBooks().find(b =>
+                (b.name || '').trim().toLowerCase() === (bookData.name || '').trim().toLowerCase() &&
+                (b.author || '').trim().toLowerCase() === (bookData.author || '').trim().toLowerCase()
+            );
+
+            if (existing) {
+                duplicates++;
+                continue;
+            }
+
+            try {
+                await Promise.resolve(DataManager.addBook(bookData));
+                const cat = bookData.category?.trim();
+                if (cat && !DataManager.getCategories().includes(cat)) {
+                    await Promise.resolve(DataManager.addCategory(cat));
+                }
+                saved++;
+            } catch (err) {
+                console.error('Error saving book:', err);
+                errors++;
+            }
+        }
+
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ الكل في المكتبة';
+
+        this.showScanStep('done');
+        document.getElementById('scan-done-title').textContent = saved > 0 ? 'تم الحفظ بنجاح!' : 'لم يتم حفظ أي كتاب';
+        let detail = `تم حفظ ${saved} كتاب`;
+        if (duplicates) detail += `، ${duplicates} مكرر (تم تخطيه)`;
+        if (errors) detail += `، ${errors} خطأ`;
+        document.getElementById('scan-done-detail').textContent = detail;
+
+        const doneIcon = document.querySelector('.scan-done-icon');
+        if (doneIcon) {
+            doneIcon.className = saved > 0 ? 'fas fa-check-circle scan-done-icon' : 'fas fa-exclamation-circle scan-done-icon';
+            doneIcon.style.color = saved > 0 ? '' : 'var(--warning-color)';
+        }
+    },
+
+    scanGoBack() {
+        this.showScanStep('upload');
+    },
+
+    resetScan() {
+        this.scanState = { files: [], extractedBooks: [] };
+        document.getElementById('scan-preview-grid').innerHTML = '';
+        document.getElementById('scan-start-actions').style.display = 'none';
+        document.getElementById('scan-progress-fill').style.width = '0%';
+        document.getElementById('scan-progress-fill').style.background = '';
+        const defaultCabinet = document.getElementById('scan-default-cabinet');
+        const defaultShelf = document.getElementById('scan-default-shelf');
+        if (defaultCabinet) defaultCabinet.value = '';
+        if (defaultShelf) defaultShelf.value = '';
+        this.showScanStep('upload');
     }
 };
 

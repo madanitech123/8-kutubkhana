@@ -89,6 +89,10 @@
                             <i class="fas fa-plus-circle"></i>
                             <span>إضافة كتاب</span>
                         </li>
+                        <li class="nav-item" data-page="scan-books">
+                            <i class="fas fa-camera"></i>
+                            <span>مسح الكتب</span>
+                        </li>
                         <li class="nav-item" data-page="loans">
                             <i class="fas fa-history"></i>
                             <span>سجل الإعارات</span>
@@ -150,6 +154,10 @@
                     <button type="button" class="mobile-nav-card" data-page="add-book">
                         <i class="fas fa-plus-circle"></i>
                         <span>إضافة كتاب</span>
+                    </button>
+                    <button type="button" class="mobile-nav-card" data-page="scan-books">
+                        <i class="fas fa-camera"></i>
+                        <span>مسح الكتب</span>
                     </button>
                     <button type="button" class="mobile-nav-card" data-page="loans">
                         <i class="fas fa-history"></i>
@@ -714,6 +722,111 @@
                 <p class="archive-desc">حفظ وعرض صور المستندات والأوراق مع ربط اختياري بكتاب.</p>
                 <div id="archive-list" class="archive-list">
                     <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Scan Books Page (Gemini AI) -->
+            <div id="scan-books-page" class="page scan-books-page">
+                <h1><i class="fas fa-camera"></i> مسح الكتب بالذكاء الاصطناعي</h1>
+                <p class="scan-desc">التقط صور الكتب أو أغلفتها وسيقوم Gemini باستخراج المعلومات تلقائيًا.</p>
+
+                <!-- Step 1: Upload -->
+                <div class="scan-step scan-upload-step" id="scan-upload-step">
+                    <div class="scan-batch-fields">
+                        <div class="form-group">
+                            <label for="scan-default-cabinet">الصندوق الافتراضي</label>
+                            <input type="text" id="scan-default-cabinet" placeholder="مثال: ١ أو A1">
+                        </div>
+                        <div class="form-group">
+                            <label for="scan-default-shelf">الطاق الافتراضي</label>
+                            <input type="text" id="scan-default-shelf" placeholder="مثال: ٢">
+                        </div>
+                    </div>
+                    <p class="scan-batch-hint">إذا كانت كل الكتب المصوّرة من نفس المكان، أدخل الصندوق والطاق مرة واحدة وسيتم تطبيقهما على النتائج تلقائيًا.</p>
+                    <div class="scan-upload-area" id="scan-upload-area">
+                        <input type="file" id="scan-file-input" accept="image/*" multiple class="scan-file-hidden">
+                        <div class="scan-upload-content">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>اسحب الصور هنا أو اضغط للاختيار</p>
+                            <span class="scan-upload-hint">يمكنك اختيار عدة صور دفعة واحدة</span>
+                        </div>
+                    </div>
+                    <div class="scan-preview-grid" id="scan-preview-grid"></div>
+                    <div class="scan-actions" id="scan-start-actions" style="display:none;">
+                        <button class="btn btn-primary" id="scan-start-btn">
+                            <i class="fas fa-magic"></i> استخراج البيانات
+                        </button>
+                        <button class="btn btn-secondary" id="scan-clear-btn">
+                            <i class="fas fa-times"></i> مسح الكل
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Processing -->
+                <div class="scan-step scan-processing-step" id="scan-processing-step" style="display:none;">
+                    <div class="scan-progress-card">
+                        <i class="fas fa-spinner fa-spin scan-progress-icon"></i>
+                        <p class="scan-progress-text" id="scan-progress-text">جاري تحليل الصور...</p>
+                        <div class="scan-progress-bar">
+                            <div class="scan-progress-fill" id="scan-progress-fill" style="width:0%"></div>
+                        </div>
+                        <span class="scan-progress-detail" id="scan-progress-detail">0 / 0</span>
+                    </div>
+                </div>
+
+                <!-- Step 3: Review & Save -->
+                <div class="scan-step scan-review-step" id="scan-review-step" style="display:none;">
+                    <div class="scan-review-header">
+                        <h2><i class="fas fa-check-circle"></i> مراجعة البيانات المستخرجة</h2>
+                        <p class="scan-review-hint">راجع البيانات وعدّلها إذا لزم الأمر، ثم اضغط حفظ.</p>
+                    </div>
+                    <div class="scan-review-table-wrap">
+                        <div class="table-container">
+                            <table class="data-table" id="scan-review-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-num">م</th>
+                                        <th>اسم الكتاب</th>
+                                        <th>المؤلف</th>
+                                        <th>القسم</th>
+                                        <th>المحقق</th>
+                                        <th>الأجزاء</th>
+                                        <th>دار النشر</th>
+                                        <th>السنة</th>
+                                        <th>الصندوق</th>
+                                        <th>الطاق</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scan-review-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="scan-review-actions">
+                        <button class="btn btn-primary" id="scan-save-all-btn">
+                            <i class="fas fa-save"></i> حفظ الكل في المكتبة
+                        </button>
+                        <button class="btn btn-secondary" id="scan-back-btn">
+                            <i class="fas fa-arrow-right"></i> رجوع
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Done -->
+                <div class="scan-step scan-done-step" id="scan-done-step" style="display:none;">
+                    <div class="scan-done-card">
+                        <i class="fas fa-check-circle scan-done-icon"></i>
+                        <h2 id="scan-done-title">تم الحفظ بنجاح!</h2>
+                        <p id="scan-done-detail"></p>
+                        <div class="scan-done-actions">
+                            <button class="btn btn-primary" id="scan-again-btn">
+                                <i class="fas fa-camera"></i> مسح كتب أخرى
+                            </button>
+                            <button class="btn btn-secondary" id="scan-go-books-btn">
+                                <i class="fas fa-list"></i> عرض قائمة الكتب
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
