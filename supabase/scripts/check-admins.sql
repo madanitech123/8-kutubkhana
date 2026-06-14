@@ -6,6 +6,6 @@ SELECT
   role,
   display_name,
   created_at
-FROM public.profiles
+FROM public.ktb_profiles
 WHERE role = 'admin'
 ORDER BY email;

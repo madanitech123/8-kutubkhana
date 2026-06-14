@@ -1,7 +1,6 @@
 -- مكتبة المصباح - Phase 4: Dangerous actions (admin-only clear all, safe deletes)
 -- Run after 004_data_integrity.sql.
 
--- Admin-only "delete all data". Only admins can execute; runs in correct order to respect FKs.
 CREATE OR REPLACE FUNCTION public.clear_all_data()
 RETURNS void
 LANGUAGE plpgsql
@@ -14,17 +13,17 @@ BEGIN
       USING errcode = 'P0001';
   END IF;
 
-  DELETE FROM loans;
-  DELETE FROM books;
-  DELETE FROM members;
-  DELETE FROM diary_entries;
-  DELETE FROM categories;
-  DELETE FROM publishers;
+  DELETE FROM ktb_loans;
+  DELETE FROM ktb_documents;
+  DELETE FROM ktb_books;
+  DELETE FROM ktb_members;
+  DELETE FROM ktb_diary_entries;
+  DELETE FROM ktb_categories;
+  DELETE FROM ktb_publishers;
 END;
 $$;
 
--- Allow authenticated users to call; function itself enforces admin
 GRANT EXECUTE ON FUNCTION public.clear_all_data() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.clear_all_data() TO service_role;
 
-COMMENT ON FUNCTION public.clear_all_data() IS 'Deletes all app data. Admin only. Used by Settings → حذف كل البيانات.';
+COMMENT ON FUNCTION public.clear_all_data() IS 'Deletes all Kutubkhana (ktb_*) app data. Admin only. Used by Settings → حذف كل البيانات.';

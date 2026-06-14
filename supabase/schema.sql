@@ -1,8 +1,8 @@
--- مكتبة المصباح - Supabase schema
+-- مكتبة المصباح - Supabase schema (ktb_ prefix for shared DB)
 -- Run this in Supabase Dashboard → SQL Editor
 
 -- Books
-CREATE TABLE IF NOT EXISTS books (
+CREATE TABLE IF NOT EXISTS ktb_books (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL DEFAULT '',
   author TEXT DEFAULT '',
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS books (
 );
 
 -- Members
-CREATE TABLE IF NOT EXISTS members (
+CREATE TABLE IF NOT EXISTS ktb_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL DEFAULT '',
   phone TEXT DEFAULT '',
@@ -30,10 +30,10 @@ CREATE TABLE IF NOT EXISTS members (
 );
 
 -- Loans
-CREATE TABLE IF NOT EXISTS loans (
+CREATE TABLE IF NOT EXISTS ktb_loans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
-  member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  book_id UUID NOT NULL REFERENCES ktb_books(id) ON DELETE CASCADE,
+  member_id UUID NOT NULL REFERENCES ktb_members(id) ON DELETE CASCADE,
   loan_date DATE,
   return_date DATE,
   status TEXT DEFAULT 'معار',
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS loans (
 );
 
 -- Diary entries
-CREATE TABLE IF NOT EXISTS diary_entries (
+CREATE TABLE IF NOT EXISTS ktb_diary_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   date DATE NOT NULL DEFAULT (current_date),
   category TEXT DEFAULT 'أخرى',
@@ -51,39 +51,39 @@ CREATE TABLE IF NOT EXISTS diary_entries (
 );
 
 -- Categories (simple list)
-CREATE TABLE IF NOT EXISTS categories (
+CREATE TABLE IF NOT EXISTS ktb_categories (
   id SERIAL PRIMARY KEY,
   name TEXT UNIQUE NOT NULL
 );
 
 -- Publishers (simple list)
-CREATE TABLE IF NOT EXISTS publishers (
+CREATE TABLE IF NOT EXISTS ktb_publishers (
   id SERIAL PRIMARY KEY,
   name TEXT UNIQUE NOT NULL
 );
 
 -- Enable Row Level Security (optional; allow anon read/write for now)
-ALTER TABLE books ENABLE ROW LEVEL SECURITY;
-ALTER TABLE members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
-ALTER TABLE diary_entries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE publishers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ktb_books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ktb_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ktb_loans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ktb_diary_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ktb_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ktb_publishers ENABLE ROW LEVEL SECURITY;
 
 -- Policies: allow anon to do everything (for app using anon key)
-CREATE POLICY "Allow anon all on books" ON books FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon all on members" ON members FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon all on loans" ON loans FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon all on diary_entries" ON diary_entries FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon all on categories" ON categories FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon all on publishers" ON publishers FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon all on ktb_books" ON ktb_books FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon all on ktb_members" ON ktb_members FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon all on ktb_loans" ON ktb_loans FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon all on ktb_diary_entries" ON ktb_diary_entries FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon all on ktb_categories" ON ktb_categories FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon all on ktb_publishers" ON ktb_publishers FOR ALL USING (true) WITH CHECK (true);
 
 -- Seed default categories
-INSERT INTO categories (name) VALUES
+INSERT INTO ktb_categories (name) VALUES
   ('تفسير'), ('حديث'), ('فقه'), ('عقيدة'), ('سيرة'), ('تاريخ'), ('لغة عربية'), ('أدب'), ('تزكية'), ('عام')
 ON CONFLICT (name) DO NOTHING;
 
 -- Seed default publishers
-INSERT INTO publishers (name) VALUES
+INSERT INTO ktb_publishers (name) VALUES
   ('دار السلام'), ('دار الكتب العلمية'), ('مؤسسة الرسالة'), ('دار ابن كثير'), ('دار المعرفة'), ('دار التراث العربي'), ('أخرى')
 ON CONFLICT (name) DO NOTHING;

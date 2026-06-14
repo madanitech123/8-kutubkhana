@@ -101,11 +101,11 @@ To try the app with Supabase (login, database, document archive) you need to run
 - **With Supabase:** copy `js/config.example.js` to `js/config.js` and set your project URL and anon key. Run the SQL in `supabase/schema.sql` from the Supabase SQL Editor. Books, members, loans, and diary are then stored in Supabase.
 
 ### User roles (profiles)
-- Also run `supabase/migrations/001_profiles_roles.sql` in the SQL Editor to create **profiles** and roles.
+- Also run `supabase/migrations/001_profiles_roles.sql` in the SQL Editor to create **ktb_profiles** and roles.
 - Roles: **مدير (admin)**, **أمين المكتبة (librarian)**, **مشاهد (viewer)**. Only **admin** sees Settings and user management.
-- After a user’s first login, a row is created in `profiles` with role **viewer**. To set the first admin, run in SQL Editor:
+- After a user’s first login, a row is created in `ktb_profiles` with role **viewer**. To set the first admin, run in SQL Editor:
   ```sql
-  UPDATE profiles SET role = 'admin' WHERE email = 'your-admin@example.com';
+  UPDATE ktb_profiles SET role = 'admin' WHERE email = 'your-admin@example.com';
   ```
 
 ## 📥 Excel import

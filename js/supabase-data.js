@@ -7,6 +7,17 @@
 
     const sb = window.supabaseClient;
 
+    const T = {
+        profiles: 'ktb_profiles',
+        books: 'ktb_books',
+        members: 'ktb_members',
+        loans: 'ktb_loans',
+        diary: 'ktb_diary_entries',
+        categories: 'ktb_categories',
+        publishers: 'ktb_publishers',
+        documents: 'ktb_documents'
+    };
+
     function mapBook(row) {
         if (!row) return null;
         return {
@@ -75,7 +86,7 @@
         publishers: []
     };
 
-    const DOCUMENT_ARCHIVE_BUCKET = 'document-archive';
+    const DOCUMENT_ARCHIVE_BUCKET = 'ktb-document-archive';
 
     let readyPromise = null;
     let authUser = null;
@@ -102,15 +113,15 @@
         if (!authUser) return;
         const uid = authUser.id;
         const email = authUser.email || '';
-        const { data: existing } = await sb.from('profiles').select('*').eq('user_id', uid).maybeSingle();
+        const { data: existing } = await sb.from(T.profiles).select('*').eq('user_id', uid).maybeSingle();
         if (existing) {
             currentUserProfile = { user_id: existing.user_id, email: existing.email || '', role: existing.role || 'viewer', display_name: existing.display_name || '' };
             return;
         }
-        const { data: inserted, error } = await sb.from('profiles').insert({ user_id: uid, email, role: 'viewer' }).select().single();
+        const { data: inserted, error } = await sb.from(T.profiles).insert({ user_id: uid, email, role: 'viewer' }).select().single();
         if (error) {
             if (error.code === '23505') {
-                const { data: row } = await sb.from('profiles').select('*').eq('user_id', uid).single();
+                const { data: row } = await sb.from(T.profiles).select('*').eq('user_id', uid).single();
                 if (row) currentUserProfile = { user_id: row.user_id, email: row.email || '', role: row.role || 'viewer', display_name: row.display_name || '' };
             }
             return;
@@ -152,13 +163,13 @@
 
     async function fetchAll() {
         const [booksRows, membersRows, loansRows, diaryRows, catRes, pubRes, docsRes] = await Promise.all([
-            fetchAllFromTable('books', 'created_at', false),
-            fetchAllFromTable('members', 'created_at', false),
-            fetchAllFromTable('loans', 'created_at', false),
-            fetchAllFromTable('diary_entries', 'created_at', false),
-            sb.from('categories').select('name').order('name'),
-            sb.from('publishers').select('name').order('name'),
-            sb.from('documents').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+            fetchAllFromTable(T.books, 'created_at', false),
+            fetchAllFromTable(T.members, 'created_at', false),
+            fetchAllFromTable(T.loans, 'created_at', false),
+            fetchAllFromTable(T.diary, 'created_at', false),
+            sb.from(T.categories).select('name').order('name'),
+            sb.from(T.publishers).select('name').order('name'),
+            sb.from(T.documents).select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
                 if (error) return []; return data || [];
             })
         ]);
@@ -213,7 +224,7 @@
         async refreshProfile() {
             if (!authUser) return;
             const uid = authUser.id;
-            const { data } = await sb.from('profiles').select('*').eq('user_id', uid).maybeSingle();
+            const { data } = await sb.from(T.profiles).select('*').eq('user_id', uid).maybeSingle();
             if (data) {
                 currentUserProfile = { user_id: data.user_id, email: data.email || '', role: data.role || 'viewer', display_name: data.display_name || '' };
             }
@@ -224,7 +235,7 @@
         },
 
         listProfiles() {
-            return sb.from('profiles').select('user_id, email, role, display_name, created_at').order('email').then(({ data, error }) => {
+            return sb.from(T.profiles).select('user_id, email, role, display_name, created_at').order('email').then(({ data, error }) => {
                 if (error) return Promise.reject(error);
                 return (data || []).map(r => ({ userId: r.user_id, email: r.email || '', role: r.role || 'viewer', displayName: r.display_name || '', createdAt: r.created_at }));
             });
@@ -232,7 +243,7 @@
 
         updateUserRole(userId, role) {
             if (!['admin', 'librarian', 'viewer'].includes(role)) return Promise.reject(new Error('Invalid role'));
-            return sb.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('user_id', userId).select().single()
+            return sb.from(T.profiles).update({ role, updated_at: new Date().toISOString() }).eq('user_id', userId).select().single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     if (data && data.user_id === authUser?.id) currentUserProfile = currentUserProfile ? { ...currentUserProfile, role: data.role } : { user_id: data.user_id, email: data.email || '', role: data.role || 'viewer', display_name: data.display_name || '' };
@@ -267,7 +278,7 @@
                 shelf: book.shelf || '',
                 notes: book.notes || ''
             };
-            return sb.from('books').insert(row).select('id, created_at, updated_at').single()
+            return sb.from(T.books).insert(row).select('id, created_at, updated_at').single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const out = mapBook({ ...row, id: data.id, created_at: data.created_at, updated_at: data.updated_at });
@@ -289,7 +300,7 @@
             Object.keys(map).forEach(k => { if (updatedData[k] !== undefined) obj[map[k]] = updatedData[k]; });
             if (obj.parts !== undefined) obj.parts = Math.max(1, parseInt(obj.parts, 10) || 1);
             if (obj.copies !== undefined) obj.copies = Math.max(1, parseInt(obj.copies, 10) || 1);
-            return sb.from('books').update(obj).eq('id', id).select().single()
+            return sb.from(T.books).update(obj).eq('id', id).select().single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const idx = cache.books.findIndex(b => b.id === id);
@@ -301,7 +312,7 @@
         deleteBook(id) {
             const activeLoan = cache.loans.some(l => l.bookId === id && l.status === 'معار');
             if (activeLoan) return Promise.reject(new Error('الكتاب معار حالياً. يرجى تسجيل الإرجاع قبل الحذف.'));
-            return sb.from('books').delete().eq('id', id).then(({ error }) => {
+            return sb.from(T.books).delete().eq('id', id).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.books.length;
                 cache.books = cache.books.filter(b => b.id !== id);
@@ -313,7 +324,7 @@
             if (!ids.length) return Promise.resolve(0);
             const withActiveLoan = ids.filter(bookId => cache.loans.some(l => l.bookId === bookId && l.status === 'معار'));
             if (withActiveLoan.length > 0) return Promise.reject(new Error('بعض الكتب معارة حالياً. يرجى تسجيل الإرجاع قبل الحذف.'));
-            return sb.from('books').delete().in('id', ids).then(({ error }) => {
+            return sb.from(T.books).delete().in('id', ids).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.books.length;
                 cache.books = cache.books.filter(b => !ids.includes(b.id));
@@ -328,7 +339,7 @@
 
         addMember(member) {
             const row = { name: member.name || '', phone: member.phone || '', address: member.address || '' };
-            return sb.from('members').insert(row).select('id, created_at').single()
+            return sb.from(T.members).insert(row).select('id, created_at').single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const out = mapMember({ ...row, id: data.id, created_at: data.created_at });
@@ -340,7 +351,7 @@
         updateMember(id, updatedData) {
             const obj = { name: updatedData.name, phone: updatedData.phone, address: updatedData.address };
             Object.keys(obj).forEach(k => obj[k] === undefined && delete obj[k]);
-            return sb.from('members').update(obj).eq('id', id).select().single()
+            return sb.from(T.members).update(obj).eq('id', id).select().single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const idx = cache.members.findIndex(m => m.id === id);
@@ -352,7 +363,7 @@
         deleteMember(id) {
             const hasActiveLoans = cache.loans.some(l => l.memberId === id && l.status === 'معار');
             if (hasActiveLoans) return Promise.reject(new Error('لا يمكن حذف العضو. يوجد إعارات نشطة. يرجى إرجاع الكتب أولاً.'));
-            return sb.from('members').delete().eq('id', id).then(({ error }) => {
+            return sb.from(T.members).delete().eq('id', id).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.members.length;
                 cache.members = cache.members.filter(m => m.id !== id);
@@ -364,7 +375,7 @@
             if (!ids.length) return Promise.resolve(0);
             const withActive = ids.filter(memberId => cache.loans.some(l => l.memberId === memberId && l.status === 'معار'));
             if (withActive.length > 0) return Promise.reject(new Error('لا يمكن حذف أعضاء لديهم إعارات نشطة. يرجى إرجاع الكتب أولاً.'));
-            return sb.from('members').delete().in('id', ids).then(({ error }) => {
+            return sb.from(T.members).delete().in('id', ids).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.members.length;
                 cache.members = cache.members.filter(m => !ids.includes(m.id));
@@ -387,7 +398,7 @@
                 return_date: null,
                 status: 'معار'
             };
-            return sb.from('loans').insert(row).select('id, created_at').single()
+            return sb.from(T.loans).insert(row).select('id, created_at').single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const out = mapLoan({ ...row, id: data.id, created_at: data.created_at });
@@ -400,7 +411,7 @@
             const loan = cache.loans.find(l => l.id === id);
             if (!loan) return Promise.resolve(null);
             const returnDate = new Date().toISOString().split('T')[0];
-            return sb.from('loans').update({ return_date: returnDate, status: 'مُرجع' }).eq('id', id).select().single()
+            return sb.from(T.loans).update({ return_date: returnDate, status: 'مُرجع' }).eq('id', id).select().single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const idx = cache.loans.findIndex(l => l.id === id);
@@ -411,7 +422,7 @@
 
         deleteLoan(id) {
             const loan = cache.loans.find(l => l.id === id);
-            return sb.from('loans').delete().eq('id', id).then(({ error }) => {
+            return sb.from(T.loans).delete().eq('id', id).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 cache.loans = cache.loans.filter(l => l.id !== id);
                 if (loan && loan.status === 'معار') {
@@ -436,7 +447,7 @@
                 details: (entry.details != null ? entry.details : entry.content) || '',
                 images: entry.images || ''
             };
-            return sb.from('diary_entries').insert(row).select('id, created_at').single()
+            return sb.from(T.diary).insert(row).select('id, created_at').single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const out = mapDiary({ ...row, id: data.id, created_at: data.created_at });
@@ -449,7 +460,7 @@
             const details = updatedData.details != null ? updatedData.details : updatedData.content;
             const obj = { date: updatedData.date, category: updatedData.category, details: details, images: updatedData.images };
             Object.keys(obj).forEach(k => obj[k] === undefined && delete obj[k]);
-            return sb.from('diary_entries').update(obj).eq('id', id).select().single()
+            return sb.from(T.diary).update(obj).eq('id', id).select().single()
                 .then(({ data, error }) => {
                     if (error) return Promise.reject(error);
                     const idx = cache.diary.findIndex(d => d.id === id);
@@ -459,7 +470,7 @@
         },
 
         deleteDiaryEntry(id) {
-            return sb.from('diary_entries').delete().eq('id', id).then(({ error }) => {
+            return sb.from(T.diary).delete().eq('id', id).then(({ error }) => {
                 if (error) return Promise.reject(error);
                 const len = cache.diary.length;
                 cache.diary = cache.diary.filter(d => d.id !== id);
@@ -497,7 +508,7 @@
                 file_paths: []
             };
             if (!row.title) return Promise.reject(new Error('عنوان الوثيقة مطلوب'));
-            const { data: inserted, error: insertErr } = await sb.from('documents').insert(row).select('id, created_at').single();
+            const { data: inserted, error: insertErr } = await sb.from(T.documents).insert(row).select('id, created_at').single();
             if (insertErr) return Promise.reject(insertErr);
             const id = inserted.id;
             const paths = [];
@@ -509,7 +520,7 @@
                     const { error: uploadErr } = await sb.storage.from(DOCUMENT_ARCHIVE_BUCKET).upload(storagePath, file, { upsert: true });
                     if (!uploadErr) paths.push(storagePath);
                 }
-                await sb.from('documents').update({ file_paths: paths, updated_at: new Date().toISOString() }).eq('id', id);
+                await sb.from(T.documents).update({ file_paths: paths, updated_at: new Date().toISOString() }).eq('id', id);
             }
             const out = mapDocument({
                 id, ...row, file_paths: paths,
@@ -532,7 +543,7 @@
             Object.keys(obj).forEach(k => obj[k] === undefined && delete obj[k]);
             if (obj.title !== undefined) obj.title = (obj.title || '').trim();
             if (!obj.title && data.title !== undefined) return Promise.reject(new Error('عنوان الوثيقة مطلوب'));
-            return sb.from('documents').update(obj).eq('id', id).select().single()
+            return sb.from(T.documents).update(obj).eq('id', id).select().single()
                 .then(({ data: row, error }) => {
                     if (error) return Promise.reject(error);
                     const idx = cache.documents.findIndex(d => d.id === id);
@@ -547,7 +558,7 @@
             if (doc && doc.filePaths && doc.filePaths.length) {
                 await sb.storage.from(DOCUMENT_ARCHIVE_BUCKET).remove(doc.filePaths);
             }
-            const { error } = await sb.from('documents').delete().eq('id', id);
+            const { error } = await sb.from(T.documents).delete().eq('id', id);
             if (error) return Promise.reject(error);
             cache.documents = cache.documents.filter(d => d.id !== id);
             return true;
@@ -558,7 +569,7 @@
 
         addCategory(category) {
             if (!category || cache.categories.includes(category)) return Promise.resolve(false);
-            return sb.from('categories').insert({ name: category }).then(({ error }) => {
+            return sb.from(T.categories).insert({ name: category }).then(({ error }) => {
                 if (!error) {
                     cache.categories.push(category);
                     return true;
@@ -579,7 +590,7 @@
         },
 
         updateCategory(oldName, newName) {
-            return sb.from('categories').update({ name: newName }).eq('name', oldName).then(({ error }) => {
+            return sb.from(T.categories).update({ name: newName }).eq('name', oldName).then(({ error }) => {
                 if (!error) {
                     const i = cache.categories.indexOf(oldName);
                     if (i !== -1) cache.categories[i] = newName;
@@ -589,7 +600,7 @@
         },
 
         deleteCategory(category) {
-            return sb.from('categories').delete().eq('name', category).then(({ error }) => {
+            return sb.from(T.categories).delete().eq('name', category).then(({ error }) => {
                 if (!error) cache.categories = cache.categories.filter(c => c !== category);
                 return !error;
             });
@@ -600,7 +611,7 @@
 
         addPublisher(publisher) {
             if (!publisher || cache.publishers.includes(publisher)) return Promise.resolve(false);
-            return sb.from('publishers').insert({ name: publisher }).then(({ error }) => {
+            return sb.from(T.publishers).insert({ name: publisher }).then(({ error }) => {
                 if (!error) {
                     cache.publishers.push(publisher);
                     cache.publishers.sort();
@@ -624,7 +635,7 @@
         },
 
         updatePublisher(oldName, newName) {
-            return sb.from('publishers').update({ name: newName }).eq('name', oldName).then(({ error }) => {
+            return sb.from(T.publishers).update({ name: newName }).eq('name', oldName).then(({ error }) => {
                 if (!error) {
                     const i = cache.publishers.indexOf(oldName);
                     if (i !== -1) cache.publishers[i] = newName;
@@ -634,7 +645,7 @@
         },
 
         deletePublisher(publisher) {
-            return sb.from('publishers').delete().eq('name', publisher).then(({ error }) => {
+            return sb.from(T.publishers).delete().eq('name', publisher).then(({ error }) => {
                 if (!error) cache.publishers = cache.publishers.filter(p => p !== publisher);
                 return !error;
             });
@@ -880,7 +891,7 @@
                         const batch = addTasks.slice(i, i + BULK_INSERT_SIZE);
                         const rows = batch.map(t => bookToRow(t.book));
                         chain = chain.then(() =>
-                            sb.from('books').insert(rows).select('id, created_at, updated_at')
+                            sb.from(T.books).insert(rows).select('id, created_at, updated_at')
                                 .then(({ data, error }) => {
                                     if (error) return Promise.reject(error);
                                     const inserted = (data || []).map((d, idx) => mapBook({ ...rows[idx], id: d.id, created_at: d.created_at, updated_at: d.updated_at }));

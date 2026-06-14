@@ -15,7 +15,7 @@ After you run the schema and migrations, **the first user who signs up gets a pr
 3. **Set the first admin** in SQL Editor:
 
    ```sql
-   UPDATE profiles
+   UPDATE ktb_profiles
    SET role = 'admin'
    WHERE email = 'your-admin@example.com';
    ```
@@ -42,7 +42,7 @@ The Supabase CLI cannot run arbitrary SQL on the remote database (it needs Docke
 
    ```sql
    SELECT email, role, display_name, created_at
-   FROM public.profiles
+   FROM public.ktb_profiles
    WHERE role = 'admin'
    ORDER BY email;
    ```
@@ -51,5 +51,5 @@ The Supabase CLI cannot run arbitrary SQL on the remote database (it needs Docke
 
 ## Troubleshooting
 
-- **No rows returned after migration:** Ensure the user is logged in and has a row in `profiles` with role `admin`, `librarian`, or `viewer`. If the profile was created with role `viewer`, promote them with the `UPDATE` above.
+- **No rows returned after migration:** Ensure the user is logged in and has a row in `ktb_profiles` with role `admin`, `librarian`, or `viewer`. If the profile was created with role `viewer`, promote them with the `UPDATE` above.
 - **500 on profiles:** Ensure `002_profiles_rls_fix.sql` has been run so profile policies use `is_profiles_admin()` and avoid RLS recursion.
