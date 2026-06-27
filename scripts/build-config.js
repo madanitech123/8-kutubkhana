@@ -8,7 +8,9 @@ const path = require('path');
 const url = process.env.SUPABASE_URL || '';
 const key = process.env.SUPABASE_ANON_KEY || '';
 const geminiKey = process.env.GEMINI_API_KEY || '';
-const outPath = path.join(__dirname, '..', 'js', 'config.js');
+const outPath = process.env.CONFIG_OUT_PATH
+    ? path.resolve(process.env.CONFIG_OUT_PATH)
+    : path.join(__dirname, '..', 'js', 'config.js');
 
 // On Vercel env is set; locally skip overwriting if no env so we don't wipe manual config.js
 if (!url && !key && fs.existsSync(outPath)) {
